@@ -60,7 +60,7 @@ $ python3 -m http.server 8000
 Open **http://localhost:8000** in Chrome or Safari.
 
 **Check:**
-- Top-left reads `Draft Room` with `12T · slot 3 · Sep 3 · pro · v2`
+- Top-left reads `Draft Room` with `12T · slot 3 · Sep 3 · pro · v3`
 - Far right of the top bar shows a grey **Manual** badge — that's the live-feed
   status indicator, off until you connect it
 - Six position columns plus a My team rail on the right
@@ -311,11 +311,41 @@ to match names to ESPN ids **once**, before the draft.
 
 ---
 
+## Phase 5½ — Configure the board for YOUR league (2 min, do not skip)
+
+The board ships with `WR: 3`. ESPN's standard lineup is `WR: 2` plus a FLEX,
+and that one number changes replacement level for every wide receiver and
+therefore the first recommendation the advisor gives you. Confirm on ESPN:
+League → Settings → **Rosters** tab shows the exact starter breakdown, and the
+**Draft** tab shows the number of rounds.
+
+Open the board → **Setup** → set:
+
+| | NatHab 12 (tonight) | Longmont Twelve (Sunday) |
+|---|---|---|
+| Teams | 12 | 12 |
+| QB / RB / WR / TE / Flex / K / DST | 1 / 2 / **2** / 1 / 1 / 1 / 1 | 1 / 2 / **2** / 1 / 1 / 1 / 1 |
+| Bench | 5 if the Draft tab says 14 rounds, 6 if it says 15 | 7 |
+| My slot | **unknown until 4:00 PM MDT** — ESPN randomises one hour before | set Sunday at 8:00 AM |
+
+Use a separate board per league so their picks never mix:
+
+- Tonight: `https://googleguy.github.io/draft-room/#nathab`
+- Sunday: `https://googleguy.github.io/draft-room/#longmont`
+
+The word after `#` shows in the top-left chip so you always know which one is
+open. Each remembers its own settings and picks independently.
+
 ## Phase 6 — Connect the board (3 min)
 
 Open your Pages URL. **Setup** → **Live ESPN feed**.
 
-1. **Adapter URL:** `https://espn-draft-adapter.YOURNAME.workers.dev/api/draft`
+1. **Adapter URL** — one Worker serves both leagues; the league id rides on
+   the URL:
+   - NatHab: `https://espn-draft-adapter.YOURNAME.workers.dev/api/draft?leagueId=NATHAB_ID`
+   - Longmont: `https://espn-draft-adapter.YOURNAME.workers.dev/api/draft?leagueId=LONGMONT_ID`
+
+   Both leagues are on your one ESPN account, so the same two cookies cover both.
 2. Press **Test once**
 
    **Check:** the status line reads `OK — 0 picks, inProgress=false, 12 teams.

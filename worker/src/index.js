@@ -195,10 +195,12 @@ export default {
       return fail("config", "Use GET.", 405, env);
     }
 
-    const season = env.ESPN_SEASON || "2026";
-    const leagueId = env.ESPN_LEAGUE_ID;
-    if (!leagueId) {
-      return fail("config", "ESPN_LEAGUE_ID is not configured on the adapter.", 500, env);
+    const season = url.searchParams.get("season") || env.ESPN_SEASON || "2026";
+    // Two leagues on one account: ?leagueId= overrides the configured default.
+    // A league id is not a secret, and the cookies are the same for both.
+    const leagueId = url.searchParams.get("leagueId") || env.ESPN_LEAGUE_ID;
+    if (!leagueId || !/^\d{1,12}$/.test(String(leagueId))) {
+      return fail("config", "No valid league id. Set ESPN_LEAGUE_ID or pass ?leagueId=NNNNNNN.", 500, env);
     }
     // Exactly one cookie set is a misconfiguration, not a public league.
     // Treating it as public would turn a typo into a silent 401 later.

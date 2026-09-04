@@ -4,7 +4,9 @@ A fantasy football draft board with a deterministic recommendation engine and
 an optional live ESPN feed. The board is a single static HTML file; the only
 server-side component exists solely because ESPN sends no CORS headers.
 
-**New here? Follow [DEPLOY.md](DEPLOY.md)** — step by step for macOS, with a
+**Deploying tonight? Follow [CHECKLIST.md](CHECKLIST.md)** — every step has a VERIFY line.
+
+For the narrative version with explanations, [DEPLOY.md](DEPLOY.md) — step by step for macOS, with a
 check after every step. About 35 minutes, most of it optional.
 
 ## Layout

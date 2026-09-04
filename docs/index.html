@@ -806,7 +806,11 @@ DST: [
 
 
 
-const KEY = "draftroom.pro.2026.v1";
+/* Two leagues from one deployment: the URL hash scopes the saved board.
+   index.html#nathab and index.html#longmont never see each other's picks. */
+const PROFILE = (typeof location !== "undefined" && location.hash)
+  ? location.hash.slice(1).replace(/[^a-z0-9_-]/gi, "").slice(0, 32) : "";
+const KEY = "draftroom.pro.2026.v1" + (PROFILE ? "." + PROFILE : "");
 const DEFAULTS = { teams:12, slot:3, QB:1, RB:2, WR:3, TE:1, FLEX:1, K:1, DST:1, BN:6, poolRound:8, theme:"mocha", dense:false, feed:null };
 
 let state = null;
@@ -1911,7 +1915,7 @@ const SAY = { mine:"Drafted", gone:"Unavailable" };
 /* ADP can be decimal (27.4) after a rankings refresh. Show one decimal, never
    floating-point noise, and never a bare integer with a trailing ".0". */
 const fmtAdp = v => (v == null ? "" : (Number.isInteger(v) ? String(v) : Number(v).toFixed(1)));
-const BUILD = "pro · v2";
+const BUILD = "pro · v3";
 
 const el = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -1950,8 +1954,8 @@ function renderConsole() {
     gap != null ? gap + " picks until " + pickLabel(win.now) :
     "Pick " + state.nextPick;
   el("clock").dataset.up = (gap === 0 || gap === 1) ? "1" : "0";
-  el("fmt").textContent = state.settings.teams + "T · slot " + state.settings.slot +
-    " · " + (state.updated || "Sep 3") + " · " + BUILD;
+  el("fmt").textContent = (PROFILE ? PROFILE + " · " : "") + state.settings.teams + "T · slot " +
+    state.settings.slot + " · " + (state.updated || "Sep 3") + " · " + BUILD;
 }
 
 /* The pick track. One cell per team for the current round, filled as picks
@@ -2499,7 +2503,7 @@ el("f_connect").addEventListener("click", async () => {
   // Names are matched once, here, while nothing is time-critical. After this
   // the live path is integer-only.
   try {
-    const res = await fetch(c.url.replace(/\/api\/draft.*$/, "/api/players"), { cache:"no-store" });
+    const res = await fetch(c.url.replace(/\/api\/draft(\?.*)?$/, "/api/players"), { cache:"no-store" });
     if (res.ok) {
       const roster = await res.json();
       const rep = resolveIds(roster.players || roster);
