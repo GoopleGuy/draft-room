@@ -60,7 +60,7 @@ $ python3 -m http.server 8000
 Open **http://localhost:8000** in Chrome or Safari.
 
 **Check:**
-- Top-left reads `Draft Room` with `12T · slot 3 · Sep 3 · pro · v3`
+- Top-left reads `Draft Room` with `12T · slot 3 · Sep 3 · pro · v5`
 - Far right of the top bar shows a grey **Manual** badge — that's the live-feed
   status indicator, off until you connect it
 - Six position columns plus a My team rail on the right
@@ -330,8 +330,8 @@ Open the board → **Setup** → set:
 
 Use a separate board per league so their picks never mix:
 
-- Tonight: `https://googleguy.github.io/draft-room/#nathab`
-- Sunday: `https://googleguy.github.io/draft-room/#longmont`
+- Tonight: `https://goopleguy.github.io/draft-room/#nathab`
+- Sunday: `https://goopleguy.github.io/draft-room/#longmont`
 
 The word after `#` shows in the top-left chip so you always know which one is
 open. Each remembers its own settings and picks independently.

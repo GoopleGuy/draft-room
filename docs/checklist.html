@@ -1,0 +1,576 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Room — Checklist</title>
+<style>
+  :root {
+    --bg:#13131a; --card:#1c1c26; --card2:#23232f; --line:#33334a;
+    --fg:#eceef3; --fg2:#b7bbc9; --fg3:#7c8195;
+    --ok:#7fd48f; --warn:#f3c96b; --bad:#f28b8b; --acc:#9ab4ff; --acc2:#c9a8ff;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  }
+  * { box-sizing:border-box; }
+  html { font-size: 16px; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:680px; margin:0 auto; padding:0 16px 80px; }
+
+  /* Top bar */
+  .top {
+    position:sticky; top:0; z-index:10; background:var(--bg);
+    border-bottom:1px solid var(--line); padding:12px 0 10px; margin-bottom:8px;
+  }
+  .top h1 { margin:0; font-size:1.05rem; letter-spacing:.02em; }
+  .top .sub { font-size:.85rem; color:var(--fg3); margin-top:2px; }
+  .prog { height:4px; background:var(--card2); border-radius:2px; margin-top:10px; overflow:hidden; }
+  .prog i { display:block; height:100%; background:var(--ok); width:0; transition:width .2s; }
+  .nav { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .nav a {
+    font-size:.78rem; color:var(--fg2); text-decoration:none; padding:4px 9px;
+    border:1px solid var(--line); border-radius:999px; background:var(--card);
+  }
+  .nav a:hover { color:var(--fg); border-color:var(--fg3); }
+  .nav a.done { color:var(--ok); border-color:var(--ok); }
+
+  /* Values panel */
+  .vals { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0 22px; }
+  .vals h2 { margin:0 0 4px; font-size:.95rem; }
+  .vals p { margin:0 0 12px; font-size:.85rem; color:var(--fg2); }
+  .vrow { display:grid; grid-template-columns: 9.5em 1fr; gap:8px 10px; align-items:center; margin-bottom:8px; }
+  .vrow label { font-size:.82rem; color:var(--fg2); }
+  .vrow input {
+    width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line);
+    border-radius:6px; padding:7px 9px; font:0.9rem var(--mono);
+  }
+  .vrow input:focus { outline:none; border-color:var(--acc); }
+  .vrow input.set { border-color:var(--ok); }
+  .vnote { font-size:.78rem; color:var(--fg3); margin-top:6px; }
+  .vnote b { color:var(--bad); font-weight:600; }
+
+  /* Parts and steps */
+  .part { margin-top:34px; }
+  .part h2 {
+    position:sticky; top:104px; z-index:5; background:var(--bg);
+    margin:0 0 12px; padding:8px 0; font-size:1rem; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--acc2); border-bottom:1px solid var(--line);
+  }
+  .part .why { font-size:.9rem; color:var(--fg2); margin:-4px 0 14px; }
+
+  .step {
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px 14px 14px; margin-bottom:10px; display:grid;
+    grid-template-columns: 30px 1fr; gap:6px 12px;
+  }
+  .step.done { opacity:.55; }
+  .step.done .act, .step.done .ver, .step.done .ifnot { display:none; }
+  .step.done .tit::after { content:"  ✓ done"; color:var(--ok); font-weight:600; }
+  .step input[type=checkbox] {
+    width:22px; height:22px; margin:2px 0 0; accent-color:var(--ok); cursor:pointer;
+  }
+  .tit { font-weight:600; font-size:.98rem; }
+  .tit .id { color:var(--fg3); font-family:var(--mono); font-size:.85rem; margin-right:8px; }
+  .body { grid-column:2; }
+
+  .act, .ver, .ifnot, .rec, .note { margin-top:10px; font-size:.93rem; }
+  .lab {
+    display:inline-block; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+    font-weight:700; margin-bottom:5px; padding:1px 6px; border-radius:4px;
+  }
+  .act .lab { color:var(--acc); background:rgba(154,180,255,.12); }
+  .ver .lab { color:var(--ok); background:rgba(127,212,143,.12); }
+  .ifnot .lab { color:var(--warn); background:rgba(243,201,107,.12); }
+  .rec .lab { color:var(--acc2); background:rgba(201,168,255,.12); }
+  .note .lab { color:var(--fg3); background:rgba(124,129,149,.15); }
+  .ver { color:var(--fg); }
+  .ifnot, .note { color:var(--fg2); }
+  .ifnot li, .ver li, .act li { margin:3px 0; }
+  ul { margin:4px 0 0; padding-left:18px; }
+
+  /* Commands */
+  .cmd {
+    position:relative; margin:8px 0 4px; background:#0d0d13; border:1px solid var(--line);
+    border-radius:8px; padding:10px 44px 10px 12px; font:0.92rem/1.55 var(--mono);
+    color:#e6ffe6; white-space:pre-wrap; word-break:break-all;
+  }
+  .cmd .ph { color:var(--bad); font-weight:600; }      /* unfilled placeholder */
+  .cmd .fv { color:var(--ok); }                        /* filled value */
+  .cmd .cp {
+    position:absolute; top:6px; right:6px; font:0.7rem var(--sans); letter-spacing:.06em;
+    color:var(--fg2); background:var(--card2); border:1px solid var(--line);
+    border-radius:5px; padding:4px 8px; cursor:pointer;
+  }
+  .cmd .cp:hover { color:var(--fg); border-color:var(--fg3); }
+  .cmd .cp.ok { color:var(--ok); border-color:var(--ok); }
+  .ui { font-family:var(--mono); font-size:.88em; background:var(--card2); padding:1px 6px; border-radius:4px; color:var(--fg); }
+  .path { color:var(--acc); }
+  .key { font-family:var(--mono); font-size:.85em; border:1px solid var(--line); border-radius:4px; padding:0 5px; background:var(--card2); }
+
+  .record { display:grid; grid-template-columns: 1fr; gap:6px; }
+  .record div { background:var(--card2); border-radius:6px; padding:6px 10px; font-size:.88rem; }
+  .record b { color:var(--acc2); }
+
+  .abort { border-color:var(--bad); }
+  .abort h2 { color:var(--bad); }
+  .abort li { margin:6px 0; }
+
+  .foot { margin-top:40px; font-size:.82rem; color:var(--fg3); text-align:center; }
+  @media (max-width: 520px) { .vrow { grid-template-columns:1fr; } .step { grid-template-columns: 26px 1fr; padding:12px; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Draft Room — Operations Checklist</h1>
+    <div class="sub" id="sub">Fill in your values below. Every command updates as you type.</div>
+    <div class="prog"><i id="prog"></i></div>
+    <div class="nav" id="nav"></div>
+  </div>
+
+  <div class="vals" id="vals">
+    <h2>Your values</h2>
+    <p>Type each one once as you obtain it. Commands below fill in automatically and turn <span style="color:var(--ok)">green</span>. Saved in this browser.</p>
+    <div class="vrow"><label>GitHub user</label><input data-v="GH" value="GoopleGuy" spellcheck="false"></div>
+    <div class="vrow"><label>Worker URL</label><input data-v="WORKER" placeholder="https://espn-draft-adapter.xxxx.workers.dev" spellcheck="false"></div>
+    <div class="vrow"><label>NatHab league id</label><input data-v="NATHAB" placeholder="digits from ESPN url" inputmode="numeric"></div>
+    <div class="vrow"><label>Longmont league id</label><input data-v="LONGMONT" placeholder="digits from ESPN url" inputmode="numeric"></div>
+    <div class="vrow"><label>Zip filename</label><input data-v="ZIP" value="draft-room.zip" spellcheck="false"></div>
+    <div class="vnote"><b>Never type your cookies or token here.</b> They're credentials — they go straight into Terminal and nowhere else.</div>
+  </div>
+
+  <div id="parts"></div>
+
+  <div class="foot">Tick a step to fold it away. Ticks are saved. Reload safely.</div>
+</div>
+
+<script>
+"use strict";
+
+/* ─────────────────────────────────────────────────────────────────────
+   Content. {{NAME}} is substituted from the values panel.
+   ───────────────────────────────────────────────────────────────────── */
+const PARTS = [
+{ id:"A", title:"Preflight — where are you",
+  why:"Your last push failed twice. Find out in one line whether it ever landed.",
+  steps:[
+  { id:"A.1", t:"Go to the project folder",
+    act:[`cmd:cd ~/Downloads/draft-room`],
+    ver:["Prompt ends in <span class=ui>draft-room %</span>"],
+    ifnot:["<span class=ui>ls ~/Downloads | grep draft</span> — then <span class=ui>cd</span> into the folder that contains <span class=path>docs/</span> and <span class=path>worker/</span>"] },
+  { id:"A.2", t:"Confirm the branch",
+    act:[`cmd:git status`],
+    ver:["First line: <span class=ui>On branch main</span>"],
+    ifnot:["<span class=ui>git branch -M main</span> then repeat"] },
+  { id:"A.3", t:"Probe: did the first push land?",
+    act:[`cmd:git ls-remote origin main`],
+    ver:["<b>(a)</b> a 40-char hash then <span class=ui>refs/heads/main</span> → push SUCCEEDED. <b>Skip to Part B.</b>",
+         "<b>(b)</b> <span class=ui>Repository not found</span> or <span class=ui>Authentication failed</span> → continue to A.4"] },
+  { id:"A.4", t:"Does the repo exist on GitHub?",
+    act:["Browser → <span class=path>https://github.com/{{GH}}/draft-room</span>"],
+    ver:["Either a repo page with files, or a 404"],
+    ifnot:["<b>404:</b> github.com/new → name <span class=ui>draft-room</span> → Public → leave every checkbox <b>unticked</b> → Create. Then A.5.",
+           "<b>Files shown:</b> repo exists, your auth was the problem. A.5."] },
+  { id:"A.5", t:"Get a Personal Access Token",
+    act:["github.com → avatar (top right) → <b>Settings</b>",
+         "Left sidebar, scroll to bottom → <b>Developer settings</b>",
+         "<b>Personal access tokens → Tokens (classic) → Generate new token (classic)</b>",
+         "Note: <span class=ui>draft-room</span> · Expiration: 7 days · tick <b>only</b> <span class=ui>repo</span> → Generate"],
+    ver:["A string starting <span class=ui>ghp_</span>. <b>Copy it now</b> — shown once."],
+    ifnot:["Missed it → generate another"] },
+  { id:"A.6", t:"Push",
+    act:[`cmd:git push -u origin main`,
+         "Username: <span class=ui>{{GH}}</span>",
+         "Password: paste the <span class=ui>ghp_</span> token — nothing echoes — then Return"],
+    ver:["Ends with <span class=ui>branch 'main' set up to track 'origin/main'</span>",
+         "macOS Keychain now stores the token. You won't be asked again."],
+    ifnot:["<span class=ui>Repository not found</span> → A.4, repo isn't created",
+           "<span class=ui>Authentication failed</span> → token lacks <span class=ui>repo</span> scope → A.5"] },
+]},
+
+{ id:"B", title:"Bring in the v3 files",
+  why:"Three files changed since your first commit: docs/index.html, worker/src/index.js, DEPLOY.md.",
+  steps:[
+  { id:"B.1", t:"Find the zip you downloaded",
+    act:[`cmd:ls ~/Downloads/*.zip`],
+    ver:["You see <span class=ui>{{ZIP}}</span>. If there are several, use the newest and type its exact name in the values panel above."],
+    ifnot:["Download the zip again from the chat"] },
+  { id:"B.2", t:"Unzip to a staging folder",
+    act:[`cmd:cd ~/Downloads\nrm -rf draft-room-new\nunzip -q "{{ZIP}}" -d draft-room-new`],
+    ver:[`cmd:ls draft-room-new/draft-room/docs`, "shows <span class=ui>fallback.html  index.html</span>"],
+    ifnot:["Wrong zip name → fix it in the values panel, repeat"] },
+  { id:"B.3", t:"Copy the new files over the old",
+    act:[`cmd:cp -R draft-room-new/draft-room/. draft-room/`,
+         "Note the trailing <span class=ui>/.</span> — it copies <em>contents</em>, not the folder itself."],
+    ver:[`cmd:grep -o 'const BUILD = "[^"]*"' draft-room/docs/index.html`,
+         "prints <span class=ui>const BUILD = \"pro · v5\"</span>"],
+    ifnot:["Still v2 or v1 → the copy missed; repeat B.3 exactly"] },
+  { id:"B.4", t:"See what changed",
+    act:[`cmd:cd ~/Downloads/draft-room\ngit status`],
+    ver:["Under <em>Changes not staged</em>, at least: <span class=ui>DEPLOY.md</span>, <span class=ui>docs/index.html</span>, <span class=ui>worker/src/index.js</span>"],
+    ifnot:["Nothing modified → B.3 copied to the wrong place"] },
+  { id:"B.5", t:"Commit",
+    act:[`cmd:git add .\ngit commit -m "v3: two-league support"`],
+    ver:["A line like <span class=ui>3 files changed, … insertions(+), … deletions(-)</span>"] },
+  { id:"B.6", t:"Push",
+    act:[`cmd:git push`],
+    ver:["Output includes <span class=ui>main -> main</span>"],
+    ifnot:["Asks for credentials → paste the <span class=ui>ghp_</span> token as password"] },
+  { id:"B.7", t:"Silence the identity warning (optional)",
+    act:[`cmd:git config --global user.name "Paxton W"\ngit config --global user.email "YOUR@EMAIL"`],
+    ver:["No output. Silence is success."] },
+]},
+
+{ id:"C", title:"GitHub Pages",
+  steps:[
+  { id:"C.1", t:"Open Pages settings",
+    act:["Browser → <span class=path>github.com/{{GH}}/draft-room</span> → <b>Settings</b> tab → left sidebar → <b>Pages</b>"],
+    ver:["Heading <em>GitHub Pages</em>"] },
+  { id:"C.2", t:"Point it at /docs",
+    act:["Source: <b>Deploy from a branch</b>", "Branch: <b>main</b>", "Folder: <b>/docs</b> — not /(root)", "→ <b>Save</b>"],
+    ver:["The dropdown <em>offered</em> /docs. GitHub only offers /(root) and /docs — that's why the board lives in a folder named docs."],
+    ifnot:["/docs missing → docs/ wasn't pushed → B.6"] },
+  { id:"C.3", t:"Wait for the build",
+    act:["Wait 60–120 s. Refresh the Pages settings page."],
+    ver:["Green banner: <em>Your site is live at</em> <span class=path>https://{{GHL}}.github.io/draft-room/</span>"],
+    ifnot:["After 3 min → <b>Actions</b> tab; a failed <em>pages build</em> job says why. Usually wrong folder in C.2."] },
+  { id:"C.4", t:"Open the board",
+    act:["<span class=path>https://{{GHL}}.github.io/draft-room/</span>"],
+    ver:["Dark board. Top-left chip ends <span class=ui>pro · v5</span>. Top-right shows a grey <span class=ui>Manual</span> badge."],
+    ifnot:["Chip says v1 or v2 → hard refresh <span class=key>⌘⇧R</span>. Still old → B.6 didn't push docs/index.html"] },
+  { id:"C.5", t:"Open the NatHab board",
+    act:["<span class=path>https://{{GHL}}.github.io/draft-room/#nathab</span>"],
+    ver:["Chip now <b>begins</b> <span class=ui>nathab ·</span> — a separate saved board"] },
+  { id:"C.6", t:"Open the Longmont board",
+    act:["<span class=path>https://{{GHL}}.github.io/draft-room/#longmont</span>"],
+    ver:["Chip begins <span class=ui>longmont ·</span>", "<b>Bookmark both URLs.</b> Friday and Sunday."] },
+]},
+
+{ id:"D", title:"ESPN league IDs and roster shape",
+  steps:[
+  { id:"D.1", t:"NatHab league id",
+    act:["fantasy.espn.com → open <em>The Notorious NatHab 12</em>"],
+    ver:["Address bar contains <span class=ui>leagueId=</span> followed by digits"],
+    rec:["Type those digits into <b>NatHab league id</b> in the values panel above"] },
+  { id:"D.2", t:"Longmont league id",
+    act:["Same for <em>The Notorious Longmont Twelve</em>"],
+    rec:["Type into <b>Longmont league id</b> above"] },
+  { id:"D.3", t:"Confirm the starting lineup",
+    act:["Either league → League → Settings → <b>Rosters</b> tab"],
+    ver:["QB 1 · RB 2 · <b>WR 2</b> · TE 1 · FLEX 1 · D/ST 1 · K 1 — nine starters"],
+    ifnot:["Different → write the real numbers down; you enter them in G.3 and H.2"] },
+  { id:"D.4", t:"NatHab round count",
+    act:["League → Settings → <b>Draft</b> tab"],
+    ver:["A line stating the number of <b>rounds</b> — expect 14 or 15"],
+    rec:["Board Bench = rounds − 9 → <b>5 or 6</b>"] },
+  { id:"D.5", t:"Longmont round count",
+    act:["Same, Longmont"],
+    ver:["Expect 16"],
+    rec:["Board Bench = <b>7</b>"] },
+]},
+
+{ id:"E", title:"ESPN cookies — once for both leagues",
+  why:"Both leagues are on your one ESPN account. Same two cookies serve both. Do this once.",
+  steps:[
+  { id:"E.1", t:"Open DevTools",
+    act:["Chrome, logged in at fantasy.espn.com", "Menu bar: <b>View → Developer → Developer Tools</b>"],
+    ver:["A panel opens, bottom or right"] },
+  { id:"E.2", t:"Find the cookies",
+    act:["Click the <b>Application</b> tab (behind <span class=ui>»</span> if hidden)",
+         "Left tree: <b>Storage → Cookies → https://fantasy.espn.com</b>"],
+    ver:["A table of cookie names"] },
+  { id:"E.3", t:"Copy SWID",
+    act:["Row <span class=ui>SWID</span> → double-click its Value → <span class=key>⌘C</span>"],
+    ver:["Looks like <span class=ui>{1A2B3C4D-1111-2222-3333-4A5B6C7D8E9F}</span> — <b>including the braces</b>"],
+    rec:["Keep it in a TextEdit file, not here"] },
+  { id:"E.4", t:"Copy espn_s2",
+    act:["Row <span class=ui>espn_s2</span> → double-click its Value → <span class=key>⌘C</span>"],
+    ver:["A very long string of letters, digits, % and +"],
+    rec:["Same TextEdit file"] },
+  { id:"E.5", t:"Treat them as your password",
+    note:["Never into a chat, a commit, wrangler.toml, or anything reaching GitHub."] },
+]},
+
+{ id:"F", title:"Cloudflare Worker — once, serves both leagues",
+  why:"ESPN sends no CORS header, so the browser can't call it directly. This is the only server-side piece, and it's free.",
+  steps:[
+  { id:"F.1", t:"Check Node",
+    act:[`cmd:node --version`],
+    ver:["<span class=ui>v18</span> or higher"],
+    ifnot:["nodejs.org → LTS installer → run → <b>quit and reopen Terminal</b> → repeat"] },
+  { id:"F.2", t:"Go to the worker folder",
+    act:[`cmd:cd ~/Downloads/draft-room/worker\nls src`],
+    ver:["<span class=ui>index.js</span>"],
+    ifnot:["Wrong folder → A.1"] },
+  { id:"F.3", t:"Edit wrangler.toml",
+    act:[`cmd:open -e wrangler.toml`,
+         "TextEdit opens. Set exactly these three:",
+         `cmd:ESPN_LEAGUE_ID = "{{NATHAB}}"\nESPN_SEASON    = "2026"\nALLOWED_ORIGIN = "https://{{GHL}}.github.io"`,
+         "<span class=key>⌘S</span> save, <span class=key>⌘Q</span> quit TextEdit"],
+    ver:["ALLOWED_ORIGIN is scheme+host <b>only</b>. No /draft-room. No trailing slash."],
+    note:["ESPN_LEAGUE_ID is only the <em>default</em>. Longmont passes its own id in the URL. <b>No cookies in this file.</b>"] },
+  { id:"F.4", t:"Install Wrangler",
+    act:[`cmd:npm install`],
+    ver:["Ends without <span class=ui>ERR!</span> lines; a <span class=path>node_modules</span> folder appears"] },
+  { id:"F.5", t:"Log in to Cloudflare",
+    act:[`cmd:npx wrangler login`],
+    ver:["Browser tab asks to authorise Wrangler → <b>Allow</b> → Terminal prints <span class=ui>Successfully logged in</span>"],
+    ifnot:["No account → cloudflare.com → Sign up (free) → repeat"] },
+  { id:"F.6", t:"Deploy",
+    act:[`cmd:npx wrangler deploy`],
+    ver:["Last lines include <span class=ui>https://espn-draft-adapter.XXXX.workers.dev</span>"],
+    rec:["Type that URL into <b>Worker URL</b> in the values panel above"] },
+  { id:"F.7", t:"Secret 1 of 2",
+    act:[`cmd:npx wrangler secret put ESPN_SWID`, "At <em>Enter a secret value:</em> paste SWID with braces → Return"],
+    ver:["<span class=ui>✨ Success! Uploaded secret ESPN_SWID</span>"] },
+  { id:"F.8", t:"Secret 2 of 2",
+    act:[`cmd:npx wrangler secret put ESPN_S2`, "Paste the long espn_s2 value → Return"],
+    ver:["<span class=ui>✨ Success! Uploaded secret ESPN_S2</span>"] },
+  { id:"F.9", t:"Redeploy",
+    act:[`cmd:npx wrangler deploy`],
+    ver:["Deploys without error"] },
+  { id:"F.10", t:"Verify NatHab through the Worker",
+    act:[`cmd:curl "{{WORKER}}/api/draft?leagueId={{NATHAB}}"`],
+    ver:["JSON containing <span class=ui>\"healthy\":true</span>",
+         "<span class=ui>\"teams\":{ … 12 entries … }</span>",
+         "<span class=ui>\"league\":{\"size\":12,\"draftType\":\"SNAKE\",\"keeperCount\":0</span>",
+         "<span class=ui>\"pickCount\":0</span> and <span class=ui>\"slotCount\":180</span> — correct before the draft. ESPN pre-creates every slot; the adapter counts only filled ones."],
+    ifnot:["<span class=ui>\"kind\":\"auth\"</span> → cookies wrong/expired → E.3–E.4 then F.7–F.9",
+           "<span class=ui>\"kind\":\"config\"</span> mentioning SWID / S2 → only one secret set → F.7 and F.8",
+           "<span class=ui>\"kind\":\"config\"</span> with 404 → wrong league id → D.1"] },
+  { id:"F.11", t:"Verify Longmont through the same Worker",
+    act:[`cmd:curl "{{WORKER}}/api/draft?leagueId={{LONGMONT}}"`],
+    ver:["Same shape. 12 teams, SNAKE. <b>Both leagues now served by one Worker.</b>"] },
+  { id:"F.12", t:"Verify the player lookup",
+    act:[`cmd:curl -s "{{WORKER}}/api/players" | head -c 400`],
+    ver:["Begins <span class=ui>{\"schemaVersion\":1,\"season\":2026,\"count\":</span> and lists players with playerId / name / pos"],
+    ifnot:["The board matches names to ESPN ids with this. Without it, live mode won't arm."] },
+]},
+
+{ id:"G", title:"Link League A — NatHab 12 (tonight)",
+  steps:[
+  { id:"G.1", t:"Open the NatHab board",
+    act:["<span class=path>https://{{GHL}}.github.io/draft-room/#nathab</span>"],
+    ver:["Chip begins <span class=ui>nathab ·</span>"] },
+  { id:"G.2", t:"Open Setup",
+    act:["Click <b>Setup</b>, top right"],
+    ver:["Panel with Palette / League / Starting lineup / Live ESPN feed"] },
+  { id:"G.3", t:"Enter the league shape",
+    act:["Teams <b>12</b> · Pool opens <b>8</b> · My slot: <em>leave for now</em>",
+         "QB <b>1</b> · RB <b>2</b> · WR <b>2</b> · TE <b>1</b> · Flex <b>1</b> · K <b>1</b> · DST <b>1</b>",
+         "Bench = NatHab rounds − 9 (from D.4: <b>5 or 6</b>)"],
+    ver:["Each field shows what you typed. Saves on change."],
+    note:["<b>WR must be 2</b>, not the default 3. This one value changes which player the advisor recommends first."] },
+  { id:"G.4", t:"Adapter URL",
+    act:["Under <b>Live ESPN feed</b> → Adapter URL:",
+         `cmd:{{WORKER}}/api/draft?leagueId={{NATHAB}}`,
+         "Poll seconds: <b>3</b>"],
+    ver:["URL contains <span class=ui>?leagueId=</span> then the NatHab id"] },
+  { id:"G.5", t:"Test once",
+    act:["Click <b>Test once</b>"],
+    ver:["<span class=ui>OK — 0 picks, inProgress=false, 12 teams. Choose your team above.</span>",
+         "The <b>My ESPN team</b> dropdown now lists 12 team names"],
+    ifnot:["<em>ESPN reports N teams but this board is set to 12</em> → G.3 Teams",
+           "<em>Failed</em> → F.10 again; the Worker is the problem, not the board"] },
+  { id:"G.6", t:"Choose your team",
+    act:["<b>My ESPN team</b> dropdown → your team's name"],
+    rec:["The number before the dash = <b>NatHab my team id</b>"],
+    note:["Get this right. Wrong team = every pick you make is filed as someone else's and the advisor thinks your roster is empty."] },
+  { id:"G.7", t:"Connect",
+    act:["Click <b>Connect</b>"],
+    ver:["<span class=ui>Matched N players. Live mode armed as team X.</span>",
+         "Close Setup (✕). Top-right badge is <b>green</b>: <span class=ui>Live 3s</span>"],
+    ifnot:["<em>Identity map unavailable</em> → F.12 failed → fix, then G.7 again"] },
+  { id:"G.8", t:"Reload test",
+    act:["<span class=key>⌘R</span>"],
+    ver:["Badge returns to green <span class=ui>Live</span> on its own within ~5 s. Chip still <span class=ui>nathab ·</span>"],
+    ifnot:["Grey → Setup → Connect again → repeat G.8"] },
+  { id:"G.9", t:"Backup",
+    act:["Setup → <b>Export</b>"],
+    ver:["<span class=ui>draft-board-2026-09-04.json</span> lands in Downloads. Independent of the browser."] },
+]},
+
+{ id:"H", title:"Link League B — Longmont Twelve (Sunday)",
+  why:"Do it now while it's fresh. Three minutes.",
+  steps:[
+  { id:"H.1", t:"Open the Longmont board",
+    act:["<span class=path>https://{{GHL}}.github.io/draft-room/#longmont</span>"],
+    ver:["Chip begins <span class=ui>longmont ·</span> and shows <b>default</b> settings (12T · slot 3) — proving it's separate from #nathab"] },
+  { id:"H.2", t:"Enter the league shape",
+    act:["Teams <b>12</b> · Pool opens <b>8</b>",
+         "QB <b>1</b> · RB <b>2</b> · WR <b>2</b> · TE <b>1</b> · Flex <b>1</b> · K <b>1</b> · DST <b>1</b>",
+         "Bench <b>7</b>",
+         "My slot: leave. Randomised Sunday 8:00 AM MDT."] },
+  { id:"H.3", t:"Adapter URL + Test",
+    act:[`cmd:{{WORKER}}/api/draft?leagueId={{LONGMONT}}`, "→ <b>Test once</b>"],
+    ver:["OK … 12 teams. Dropdown lists the <b>Longmont</b> team names — different from G.5, confirming the id is right"] },
+  { id:"H.4", t:"Choose team → Connect",
+    act:["Select your Longmont team → <b>Connect</b>"],
+    ver:["<span class=ui>Live mode armed as team X.</span> Badge green."],
+    rec:["<b>Longmont my team id</b> — almost certainly different from NatHab"] },
+  { id:"H.5", t:"Disconnect for now",
+    act:["Setup → <b>Disconnect</b>"],
+    ver:["Badge grey <span class=ui>Manual</span>"],
+    note:["No point polling an idle league for two days. Reconnect Sunday (Part K)."] },
+  { id:"H.6", t:"Back to NatHab",
+    act:["Return to the <span class=ui>#nathab</span> tab"],
+    ver:["Still green <span class=ui>Live</span>, chip <span class=ui>nathab ·</span>. Both boards configured, no shared state."] },
+]},
+
+{ id:"I", title:"Rehearsal — before 4:00 PM MDT",
+  why:"The one test nobody has run: does ESPN's feed keep pace with a live draft room? Twenty minutes now saves the real draft.",
+  steps:[
+  { id:"I.1", t:"Join a mock",
+    act:["ESPN → any league → <b>Draft → Mock Draft Lobby</b> → join a 12-team mock", "Note the mock's <span class=ui>leagueId</span> from the address bar"] },
+  { id:"I.2", t:"Point a scratch board at it",
+    act:["New tab: <span class=path>https://{{GHL}}.github.io/draft-room/#mock</span>",
+         "Setup → Adapter URL with <span class=ui>?leagueId=MOCK_ID</span> → Test once → pick your team → Connect"],
+    ver:["Green <span class=ui>Live</span>"] },
+  { id:"I.3", t:"Watch and tick",
+    act:["Another manager picks → struck through on your board within ~10 s",
+         "<b>You</b> pick → appears on My team rail, <b>not</b> struck through (if struck through → wrong team in I.2)",
+         "Pick track along the top advances",
+         "Pull wifi 20 s → badge <span class=ui>Stale</span> → <b>no player returns</b> → wifi back → catches up alone",
+         "<span class=key>⌘R</span> mid-draft → everything restores, badge green",
+         "<span class=key>⌘Z</span> → refused: <em>Undo is disabled while the ESPN feed is live</em>",
+         "Mark someone by hand, let ESPN contradict → toast <em>ESPN corrected…</em>"] },
+  { id:"I.4", t:"Decide",
+    ver:["Picks appear within ~10 s → <b>live mode is GO</b> for tonight"],
+    ifnot:["Picks lag 30 s or never show → <b>NO-GO</b>. Setup → Disconnect on #nathab. Use manual mode (J.5). The board is fully functional without the feed."] },
+]},
+
+{ id:"J", title:"Draft night — NatHab, Friday",
+  steps:[
+  { id:"J.1", t:"4:00 PM — draft order published",
+    act:["#nathab → Setup → <b>My slot</b> = your position 1–12 → close"],
+    ver:["Chip shows <span class=ui>slot N</span>; advisor says <span class=ui>Projected · 1.0N</span>"] },
+  { id:"J.2", t:"4:40 PM — Export",
+    act:["Setup → <b>Export</b>"],
+    ver:["Fresh backup with the slot set"] },
+  { id:"J.3", t:"4:50 PM — Stations",
+    act:["Board open, badge green. ESPN draft room in a <b>separate window</b> — you need both visible."] },
+  { id:"J.4", t:"5:00 PM — Drafting (60 s per pick)",
+    act:["<span class=key>Space</span> — drafts the advisor's top pick",
+         "Click <b>Draft</b> on any row",
+         "<span class=key>/</span> name <span class=key>⇧Return</span> — drafts a specific player",
+         "The feed marks other managers' picks for you"] },
+  { id:"J.5", t:"Manual fallback",
+    act:["<span class=key>/</span> name <span class=key>Return</span> — marks a player unavailable (~2 s)",
+         "<span class=key>/</span> name <span class=key>⇧Return</span> — drafts him to you",
+         "<span class=key>Option</span>-click Draft overrides the turn guard if the clock drifted"],
+    note:["Use if I.4 was NO-GO or the badge turns red."] },
+  { id:"J.6", t:"After",
+    act:["Setup → <b>Export</b>"],
+    ver:["Your final roster, saved"] },
+]},
+
+{ id:"K", title:"Draft morning — Longmont, Sunday",
+  steps:[
+  { id:"K.1", t:"8:00 AM — Reconnect",
+    act:["#longmont → Setup → <b>My slot</b> → adapter URL is already there → <b>Test once</b> → confirm your team → <b>Connect</b>"],
+    ver:["Green <span class=ui>Live</span>, chip <span class=ui>longmont · slot N</span>"] },
+  { id:"K.2", t:"8:15 — Cookie check",
+    ifnot:["Badge <span class=ui>Auth error</span> → cookies expired since Friday → E.3–E.4 → F.7–F.9 → K.1 again"],
+    note:["Cookies last days, not weeks. Usually fine."] },
+  { id:"K.3", t:"8:45 — Export. 9:00 — draft.",
+    note:["90 s per pick. More room than Friday."] },
+]},
+];
+
+const ABORT = [
+  "Badge red <b>Auth error</b> or <b>Config error</b> and 60 seconds to fix isn't there",
+  "A player you <b>know</b> was drafted is still on the board after 30 s",
+  "A player appears on <b>your</b> roster that you did not draft",
+  "The pick counter in the chip disagrees with ESPN's by more than one",
+  "Badge <b>Suspicious</b> for more than two polls",
+];
+
+/* ─────────────────────────────────────────────────────────────────────
+   Render
+   ───────────────────────────────────────────────────────────────────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&(?!amp;|lt;|gt;|quot;|#)/g,"&amp;");
+let store;
+try { localStorage.setItem("_t","1"); localStorage.removeItem("_t"); store = localStorage; }
+catch(e){ const m={}; store={ getItem:k=>m[k]??null, setItem:(k,v)=>m[k]=v }; }
+
+const VKEYS = ["GH","WORKER","NATHAB","LONGMONT","ZIP"];
+function vals(){
+  const v={};
+  VKEYS.forEach(k=>{ v[k]=(store.getItem("v."+k) ?? $(`[data-v="${k}"]`).value ?? "").trim(); });
+  v.GHL = (v.GH||"").toLowerCase();                 // Pages URLs are lowercased
+  v.WORKER = v.WORKER.replace(/\/+$/,"");           // no trailing slash
+  return v;
+}
+function fill(str, v){
+  return str.replace(/\{\{(\w+)\}\}/g, (_,k)=>{
+    const val = v[k];
+    if (val) return `<span class="fv">${esc(val)}</span>`;
+    const label = {WORKER:"WORKER_URL",NATHAB:"NATHAB_ID",LONGMONT:"LONGMONT_ID",GH:"GITHUB_USER",GHL:"github-user",ZIP:"draft-room.zip"}[k]||k;
+    return `<span class="ph">${label}</span>`;
+  });
+}
+function cmdBlock(text, v, i){
+  const shown = fill(esc(text), v);
+  const raw = text.replace(/\{\{(\w+)\}\}/g,(_,k)=>v[k]||`<${k}>`);
+  return `<div class="cmd">${shown}<button class="cp" data-copy="${encodeURIComponent(raw)}">copy</button></div>`;
+}
+function items(list, v){
+  if (!list) return "";
+  return list.map(x => x.startsWith("cmd:") ? cmdBlock(x.slice(4), v) : `<li>${fill(x, v)}</li>`)
+    .join("").replace(/(<li>[\s\S]*?<\/li>)+/g, m=>`<ul>${m}</ul>`);
+}
+function block(cls, label, list, v){
+  if (!list || !list.length) return "";
+  return `<div class="${cls}"><span class="lab">${label}</span>${items(list, v)}</div>`;
+}
+function render(){
+  const v = vals();
+  VKEYS.forEach(k=>{ const el=$(`[data-v="${k}"]`); el.value = store.getItem("v."+k) ?? el.value; el.classList.toggle("set", !!el.value.trim()); });
+  let total=0, done=0;
+  $("#parts").innerHTML = PARTS.map(p=>{
+    const steps = p.steps.map(s=>{
+      total++; const d = store.getItem("done."+s.id)==="1"; if (d) done++;
+      return `<div class="step${d?" done":""}" id="s-${s.id.replace(".","-")}">
+        <input type="checkbox" data-step="${s.id}" ${d?"checked":""} aria-label="Done ${s.id}">
+        <div class="tit"><span class="id">${s.id}</span>${s.t}</div>
+        <div class="body">
+          ${block("act","Action",s.act,v)}
+          ${block("ver","Verify",s.ver,v)}
+          ${block("ifnot","If not",s.ifnot,v)}
+          ${block("rec","Record",s.rec,v)}
+          ${block("note","Note",s.note,v)}
+        </div></div>`;
+    }).join("");
+    return `<section class="part" id="p-${p.id}"><h2>Part ${p.id} — ${p.title}</h2>
+      ${p.why?`<p class="why">${p.why}</p>`:""}${steps}</section>`;
+  }).join("") + `<section class="part"><div class="step abort" style="display:block"><h2 style="position:static;border:0;padding:0;margin:0 0 8px">Abort criteria — switch to manual</h2>
+    <ul>${ABORT.map(a=>`<li>${a}</li>`).join("")}</ul>
+    <p style="margin:10px 0 0;color:var(--fg2);font-size:.92rem">Setup → Disconnect. Nothing is lost. The board was a complete manual product before the feed existed — two seconds a pick by keyboard.</p></div></section>`;
+  $("#prog").style.width = (total? (done/total*100):0)+"%";
+  $("#sub").textContent = `${done} of ${total} steps done`;
+  $("#nav").innerHTML = PARTS.map(p=>{
+    const all = p.steps.every(s=>store.getItem("done."+s.id)==="1");
+    return `<a href="#p-${p.id}" class="${all?"done":""}">${p.id}</a>`;
+  }).join("");
+}
+document.addEventListener("input", e=>{
+  const k = e.target.dataset && e.target.dataset.v;
+  if (!k) return;
+  store.setItem("v."+k, e.target.value);
+  const y = window.scrollY; render(); window.scrollTo(0,y);
+});
+document.addEventListener("change", e=>{
+  const s = e.target.dataset && e.target.dataset.step;
+  if (!s) return;
+  store.setItem("done."+s, e.target.checked?"1":"0");
+  const y = window.scrollY; render(); window.scrollTo(0,y);
+});
+document.addEventListener("click", async e=>{
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  const text = decodeURIComponent(b.dataset.copy);
+  try { await navigator.clipboard.writeText(text); b.textContent="copied"; b.classList.add("ok");
+        setTimeout(()=>{ b.textContent="copy"; b.classList.remove("ok"); },1400); }
+  catch(err){ b.textContent="select & ⌘C"; }
+});
+render();
+</script>

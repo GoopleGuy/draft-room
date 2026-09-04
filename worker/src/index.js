@@ -82,11 +82,18 @@ function normalize(blob, season, leagueId) {
     return { err: ["malformed", "draftDetail.picks was not a list."] };
   }
 
-  let skipped = 0;
+  let skipped = 0, pending = 0;
   const picks = [];
   for (const p of raw) {
-    if (!p || typeof p !== "object" || p.playerId == null || p.overallPickNumber == null) {
+    if (!p || typeof p !== "object" || p.overallPickNumber == null) {
       skipped++;
+      continue;
+    }
+    // ESPN pre-populates every draft slot before and during the draft, with
+    // playerId -1 meaning "not yet picked". Observed live 2026-09-04. Those
+    // are slots, not picks — counting them as picks trips every invariant.
+    if (p.playerId == null || p.playerId <= 0) {
+      pending++;
       continue;
     }
     picks.push({
@@ -109,7 +116,9 @@ function normalize(blob, season, leagueId) {
     size: (blob.settings && blob.settings.size) ?? (blob.teams ? blob.teams.length : null),
     draftType: st.type ?? null,               // "SNAKE" | "LINEAR" | "AUCTION" | ...
     keeperCount: st.keeperCount ?? 0,
-    auction: /AUCTION|SALARY/i.test(String(st.type || "")) || (st.auctionBudget || 0) > 0,
+    // Observed live 2026-09-04: ESPN sets a default auctionBudget on SNAKE
+    // leagues too, so budget presence is NOT evidence of an auction.
+    auction: /AUCTION|SALARY/i.test(String(st.type || "")),
     pickOrder: Array.isArray(st.pickOrder) ? st.pickOrder : [],
   };
 
@@ -134,6 +143,7 @@ function normalize(blob, season, leagueId) {
         inProgress: Boolean(dd.inProgress),
         completeDate: dd.completeDate ?? null,
         pickCount: picks.length,
+        slotCount: picks.length + pending,        // total draft length ESPN reports
         nextOverallPick: picks.length ? picks[picks.length - 1].overall + 1 : 1,
       },
       picks,

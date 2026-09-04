@@ -153,15 +153,17 @@ def normalize(blob, season, league):
     if not isinstance(raw, list):
         raise Fetch("malformed", "draftDetail.picks was not a list.", None, retryable=True)
 
-    picks, skipped = [], 0
+    picks, skipped, pending = [], 0, 0
     for p in raw:
-        if not isinstance(p, dict):
+        if not isinstance(p, dict) or p.get("overallPickNumber") is None:
             skipped += 1
             continue
         pid = p.get("playerId")
         overall = p.get("overallPickNumber")
-        if pid is None or overall is None:
-            skipped += 1
+        # ESPN pre-populates every slot with playerId -1 before it is used.
+        # Observed live 2026-09-04. A slot is not a pick.
+        if pid is None or pid <= 0:
+            pending += 1
             continue
         picks.append({
             "id": p.get("id", overall),
@@ -180,8 +182,7 @@ def normalize(blob, season, league):
         "size": (blob.get("settings") or {}).get("size") or len(blob.get("teams") or []),
         "draftType": st.get("type"),
         "keeperCount": st.get("keeperCount", 0),
-        "auction": bool(__import__("re").search(r"AUCTION|SALARY", str(st.get("type") or "")))
-                   or (st.get("auctionBudget") or 0) > 0,
+        "auction": bool(__import__("re").search(r"AUCTION|SALARY", str(st.get("type") or ""))),
         "pickOrder": st.get("pickOrder") if isinstance(st.get("pickOrder"), list) else [],
     }
 
@@ -207,6 +208,7 @@ def normalize(blob, season, league):
             "inProgress": bool(dd.get("inProgress")),
             "completeDate": dd.get("completeDate"),
             "pickCount": len(picks),
+            "slotCount": len(picks) + pending,
             "nextOverallPick": (picks[-1]["overall"] + 1) if picks else 1,
         },
         "picks": picks,

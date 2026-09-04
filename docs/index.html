@@ -1648,9 +1648,16 @@ function validateSnapshot(s) {
   if (!s.draft || typeof s.draft !== "object") throw new Error("snapshot has no draft block");
   if (!Array.isArray(s.picks)) throw new Error("picks was not a list");
 
+  // An adapter that predates the slot filter may still forward ESPN's
+  // unfilled slots (playerId -1). Drop them here rather than fail the feed,
+  // and let pickCount follow the filtered list.
+  const rawLen = s.picks.length;
+  s.picks = s.picks.filter(pk => !(pk && typeof pk === "object" && typeof pk.playerId === "number" && pk.playerId <= 0));
   const n = s.draft.pickCount;
   if (typeof n !== "number" || n < 0) throw new Error("bad pickCount");
-  if (n !== s.picks.length) throw new Error("pickCount " + n + " disagrees with " + s.picks.length + " picks");
+  if (n !== s.picks.length && n !== rawLen)
+    throw new Error("pickCount " + n + " disagrees with " + s.picks.length + " picks");
+  s.draft.pickCount = s.picks.length;
 
   const seenOverall = new Set(), seenPlayer = new Set();
   for (const pk of s.picks) {
@@ -1832,6 +1839,7 @@ async function pollOnce() {
   }
   feed.fails = 0;
   feed.lastGood = s;
+  applyPickOrder(s);   // order can publish mid-connection; slot follows it
   feed.lastOkAt = Date.now();
 
   const delta = applySnapshot(s);
@@ -1915,7 +1923,7 @@ const SAY = { mine:"Drafted", gone:"Unavailable" };
 /* ADP can be decimal (27.4) after a rankings refresh. Show one decimal, never
    floating-point noise, and never a bare integer with a trailing ".0". */
 const fmtAdp = v => (v == null ? "" : (Number.isInteger(v) ? String(v) : Number(v).toFixed(1)));
-const BUILD = "pro · v3";
+const BUILD = "pro · v5";
 
 const el = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -2466,6 +2474,24 @@ function readFeedInputs() {
 }
 function feedReport(msg) { el("f_status").textContent = msg; }
 
+/* ESPN publishes pickOrder once the draft order is set. Your slot is simply
+   where your team sits in it — derive it instead of asking you to type it. */
+function applyPickOrder(snapshot) {
+  const cfg = feedCfg();
+  const po = snapshot && snapshot.league && snapshot.league.pickOrder;
+  if (!Array.isArray(po) || !po.length || cfg.myTeamId == null) return false;
+  const idx = po.findIndex(t => String(t) === String(cfg.myTeamId));
+  if (idx < 0) return false;
+  const slot = idx + 1;
+  if (state.settings.slot !== slot) {
+    commit("slot from ESPN draft order");
+    state.settings.slot = slot; save();
+    toast("ESPN draft order: you pick " + slot + (slot===1?"st":slot===2?"nd":slot===3?"rd":"th") + " — slot set automatically.");
+    return true;
+  }
+  return false;
+}
+
 /* Populate the team picker from what ESPN actually reports, and check the
    league size against this board — different sizes mean the snake maths is
    simply wrong, and every downstream number with it. */
@@ -2513,6 +2539,7 @@ el("f_connect").addEventListener("click", async () => {
           "Nothing would be matched. Manual marking still works.");
       }
       c.enabled = true; save();
+      if (feed.lastGood) applyPickOrder(feed.lastGood);
       feedReport("Matched " + rep.hit + " players." +
         (rep.missed.length ? " " + rep.missed.length + " ESPN entries had no match here." : "") +
         " Live mode armed as team " + c.myTeamId + ".");
@@ -2543,9 +2570,12 @@ el("f_test").addEventListener("click", async () => {
     const s2 = await res.json();
     if (s2.error) return feedReport("Adapter reported " + s2.error.kind + ": " + s2.error.message);
     validateSnapshot(s2);
+    feed.lastGood = feed.lastGood || s2;
     const ids = fillTeams(s2);
-    feedReport("OK — " + s2.draft.pickCount + " picks, inProgress=" + s2.draft.inProgress +
-      ", " + ids.length + " teams. Choose your team above." + leagueSizeWarning(ids));
+    const ordered = Array.isArray(s2.league && s2.league.pickOrder) && s2.league.pickOrder.length;
+    feedReport("OK — " + s2.draft.pickCount + " picks, " + ids.length + " teams." +
+      (ordered ? " Draft order is set — your slot fills in when you choose your team and Connect." : " Draft order not published yet.") +
+      leagueSizeWarning(ids));
   } catch (e) { feedReport("Failed: " + e.message); }
 });
 

@@ -110,7 +110,7 @@ The zip you downloaded is newer than what you pushed. Three files changed:
 ☐ B.3  ACTION   $ cp -R draft-room-new/draft-room/. draft-room/
                 (note the trailing  /.  — it copies CONTENTS, not the folder)
        VERIFY   $ grep -o 'const BUILD = "[^"]*"' draft-room/docs/index.html
-                prints  const BUILD = "pro · v3"
+                prints  const BUILD = "pro · v5"
        IF NOT   the copy missed; repeat B.3 exactly
 
 ☐ B.4  ACTION   $ cd ~/Downloads/draft-room
@@ -154,21 +154,21 @@ The zip you downloaded is newer than what you pushed. Three files changed:
 
 ☐ C.3  ACTION   Wait 60–120 s. Refresh the Pages settings page.
        VERIFY   green banner: "Your site is live at
-                https://googleguy.github.io/draft-room/"
+                https://goopleguy.github.io/draft-room/"
        IF NOT   after 3 minutes → Actions tab; a failed "pages build" job
                 will say why. Usually: wrong folder in C.2.
 
-☐ C.4  ACTION   Open  https://googleguy.github.io/draft-room/
-       VERIFY   dark board. Top-left chip ends  pro · v3
+☐ C.4  ACTION   Open  https://goopleguy.github.io/draft-room/
+       VERIFY   dark board. Top-left chip ends  pro · v5
                 Top-right shows a grey  Manual  badge
        IF OLD   chip says v1 or v2 → hard refresh  ⌘⇧R
                 still old → B.6 didn't push docs/index.html
 
-☐ C.5  ACTION   Open  https://googleguy.github.io/draft-room/#nathab
+☐ C.5  ACTION   Open  https://goopleguy.github.io/draft-room/#nathab
        VERIFY   top-left chip now BEGINS with  nathab ·
                 (this is a separate saved board from the one without #)
 
-☐ C.6  ACTION   Open  https://googleguy.github.io/draft-room/#longmont
+☐ C.6  ACTION   Open  https://goopleguy.github.io/draft-room/#longmont
        VERIFY   chip begins  longmont ·
                 Bookmark BOTH of these URLs. You will use them Fri and Sun.
 ```
@@ -248,7 +248,7 @@ Both leagues are on the one account, so you do this ONCE.
 
                 ESPN_LEAGUE_ID = "PASTE_NATHAB_ID"
                 ESPN_SEASON    = "2026"
-                ALLOWED_ORIGIN = "https://googleguy.github.io"
+                ALLOWED_ORIGIN = "https://goopleguy.github.io"
 
                 ALLOWED_ORIGIN is scheme+host ONLY. No /draft-room. No trailing /.
                 ⌘S to save. ⌘Q to quit TextEdit.
@@ -306,7 +306,7 @@ Both leagues are on the one account, so you do this ONCE.
 ## PART G — LINK LEAGUE A: NATHAB 12 (tonight)
 
 ```
-☐ G.1  ACTION   Open  https://googleguy.github.io/draft-room/#nathab
+☐ G.1  ACTION   Open  https://goopleguy.github.io/draft-room/#nathab
        VERIFY   chip begins  nathab ·
 
 ☐ G.2  ACTION   Click  Setup  (top right)
@@ -359,7 +359,7 @@ Both leagues are on the one account, so you do this ONCE.
 Do this now while everything is fresh; it takes three minutes.
 
 ```
-☐ H.1  ACTION   Open  https://googleguy.github.io/draft-room/#longmont
+☐ H.1  ACTION   Open  https://goopleguy.github.io/draft-room/#longmont
        VERIFY   chip begins  longmont ·  and shows DEFAULT settings
                 (12T · slot 3) — proving it is a separate board from #nathab
 
@@ -401,7 +401,7 @@ a live draft room. Twenty minutes now saves the actual draft.
 ☐ I.1  ACTION   ESPN → any league → Draft → Mock Draft Lobby → join a 12-team mock
                 Note the mock's leagueId from the address bar.
 
-☐ I.2  ACTION   New tab: https://googleguy.github.io/draft-room/#mock
+☐ I.2  ACTION   New tab: https://goopleguy.github.io/draft-room/#mock
                 Setup → Adapter URL with  ?leagueId=MOCK_ID  → Test once →
                 pick your team → Connect
        VERIFY   green  Live
