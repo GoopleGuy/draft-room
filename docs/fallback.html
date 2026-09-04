@@ -1,0 +1,1650 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Room — 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   DRAFT ROOM
+
+   Rich dark tooling, in the lineage of the r/unixporn rices but built to
+   the finish level of Linear / Raycast / Zed: elevated surfaces over a
+   deep ground, one vivid accent per palette, saturated position hues,
+   tabular figures, and motion that confirms every action.
+
+   LAYOUT RULE, learned the hard way: nothing is absolutely positioned
+   over content. Every control sits in the grid and every text cell is
+   minmax(0,1fr), so a long name shortens itself instead of shoving a
+   button off the pane. Action labels swap to glyphs via container query
+   when a column gets narrow — the word still arrives in the tooltip and
+   the confirmation toast.
+   ══════════════════════════════════════════════════════════════════════ */
+
+[data-theme="mocha"] {
+  --num:#FAB387; --str:#A6E3A1; --kw:#CBA6F7; --typ:#94E2D5;
+  --bg:#11111B; --s1:#1E1E2E; --s2:#282839; --s3:#313244; --s4:#45475A;
+  --fg:#CDD6F4; --fg2:#B4BCD8; --fg3:#8F96B3;
+  --line:rgba(205,214,244,.07); --line2:rgba(205,214,244,.14);
+  --accent:#CBA6F7; --accent2:#B4BEFE; --ok:#A6E3A1; --bad:#F38BA8; --warn:#F9E2AF;
+  --qb:#F38BA8; --rb:#89B4FA; --wr:#CBA6F7; --te:#F9E2AF; --k:#94E2D5; --dst:#F5C2E7;
+}
+[data-theme="midnight"] {
+  --num:#FF9E64; --str:#9ECE6A; --kw:#BB9AF7; --typ:#2AC3DE;
+  --bg:#13131A; --s1:#1A1B26; --s2:#1F2130; --s3:#292E42; --s4:#3B4261;
+  --fg:#C8D3F5; --fg2:#A9B8E8; --fg3:#8B95C9;
+  --line:rgba(200,211,245,.07); --line2:rgba(200,211,245,.14);
+  --accent:#7AA2F7; --accent2:#7DCFFF; --ok:#9ECE6A; --bad:#F7768E; --warn:#E0AF68;
+  --qb:#F7768E; --rb:#7DCFFF; --wr:#BB9AF7; --te:#E0AF68; --k:#73DACA; --dst:#7AA2F7;
+}
+[data-theme="gruvbox"] {
+  --num:#E3C05C; --str:#B4C77A; --kw:#DE97AC; --typ:#8FBFB4;
+  --bg:#1B1E1F; --s1:#242829; --s2:#2C3133; --s3:#37413F; --s4:#4A5452;
+  --fg:#E4D5B7; --fg2:#CDBA95; --fg3:#AEA086;
+  --line:rgba(228,213,183,.08); --line2:rgba(228,213,183,.16);
+  --accent:#E89B55; --accent2:#D8A657; --ok:#B4C77A; --bad:#F37F78; --warn:#E3C05C;
+  --qb:#F37F78; --rb:#8FBFB4; --wr:#DE97AC; --te:#E3C05C; --k:#A9C083; --dst:#E89B55;
+}
+[data-theme="rosepine"] {
+  --num:#F6C177; --str:#9CCFD8; --kw:#C4A7E7; --typ:#9CCFD8;
+  --bg:#1B1830; --s1:#232136; --s2:#2A273F; --s3:#393552; --s4:#4C4767;
+  --fg:#E0DEF4; --fg2:#C5C1E0; --fg3:#9D98BE;
+  --line:rgba(224,222,244,.07); --line2:rgba(224,222,244,.15);
+  --accent:#C4A7E7; --accent2:#9CCFD8; --ok:#9CCFD8; --bad:#EB6F92; --warn:#F6C177;
+  --qb:#EB6F92; --rb:#9CCFD8; --wr:#C4A7E7; --te:#F6C177; --k:#5FB3C9; --dst:#EA9A97;
+}
+
+:root {
+  --ui:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gap: clamp(5px, 0.5vw, 10px);
+  --pad: clamp(8px, 0.72vw, 12px);
+  --r: 10px;
+  --r2: 6px;
+  --ease: cubic-bezier(.32,.72,0,1);
+  --t-nm:   clamp(12.5px, 0.88vw, 14px);
+  --t-fig:  clamp(9.5px, 0.66vw, 10.75px);
+  --t-rk:   clamp(9.5px, 0.68vw, 11px);
+  --t-lab:  clamp(9px, 0.62vw, 10.25px);
+  --t-hd:   clamp(11px, 0.76vw, 12.5px);
+  --t-clock:clamp(17px, 1.5vw, 24px);
+}
+
+* { box-sizing: border-box; min-width: 0; }
+html { height: 100%; }
+body {
+  margin: 0; height: 100%; padding: var(--gap);
+  background: var(--bg); color: var(--fg);
+  font-family: var(--ui); font-size: var(--t-nm);
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; gap: var(--gap);
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+input, textarea { font: inherit; color: var(--fg); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.fig { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+/* Elevated surface, lit from the top. Used for every pane. */
+.card {
+  background: linear-gradient(180deg, var(--s2) 0%, var(--s1) 42%);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 6px 18px -10px rgba(0,0,0,.6);
+}
+
+/* ── Top bar ────────────────────────────────────────────────────────── */
+.bar { display: flex; gap: var(--gap); flex: none; align-items: stretch; flex-wrap: wrap; }
+.bar > * { min-height: 42px; }
+
+.brand {
+  display: flex; align-items: center; gap: 9px; padding: 0 13px;
+  flex: 0 1 auto; min-width: 0; overflow: hidden;
+}
+.brand b, .brand span { overflow: hidden; text-overflow: ellipsis; }
+.brand .mk {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  flex: none;
+}
+.brand b { font-size: var(--t-hd); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+.brand span { font-size: var(--t-lab); color: var(--fg3); white-space: nowrap; }
+
+.clock { display: flex; align-items: center; gap: 11px; padding: 0 15px; flex: none; }
+.clock .big {
+  font-family: var(--mono); font-size: var(--t-clock); font-weight: 700;
+  letter-spacing: -.035em; line-height: 1; color: var(--accent);
+}
+.clock .col2 { display: flex; flex-direction: column; gap: 2px; }
+.clock .k { font-size: var(--t-lab); color: var(--fg3); text-transform: uppercase; letter-spacing: .09em; }
+.clock .w { font-size: var(--t-lab); color: var(--fg2); white-space: nowrap; }
+.clock[data-up="1"] { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.clock[data-up="1"] .w { color: var(--accent); font-weight: 600; }
+/* The clock signals with a travelling outline, not a halo. */
+.clock[data-up="1"] { animation: ring 2.2s ease-in-out infinite; }
+@keyframes ring {
+  0%,100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+  50%     { box-shadow: inset 0 0 0 1px var(--accent); }
+}
+
+/* The field owns its whole box. No overlaid hint — that was the bug. */
+.seek { flex: 1 1 240px; min-width: 140px; display: flex; align-items: center; padding: 0 13px; gap: 9px; position: relative; }
+.seek svg { flex: none; opacity: .5; }
+.seek input { flex: 1 1 auto; background: none; border: 0; padding: 0; font-size: var(--t-nm); min-width: 0; }
+.seek input:focus { outline: none; }
+.seek input::placeholder { color: var(--fg3); }
+.seek kbd {
+  flex: none; font-family: var(--mono); font-size: var(--t-lab);
+  color: var(--fg3); border: 1px solid var(--line2); border-radius: 4px;
+  padding: 2px 5px; line-height: 1;
+}
+.seek:focus-within { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+/* Hints float below on focus. Absolute, but over the page gutter — never
+   over content, and it can't affect the field's own layout. */
+.seek .tip {
+  position: absolute; left: 11px; top: calc(100% + 5px); z-index: 20;
+  background: var(--s3); border: 1px solid var(--line2); border-radius: var(--r2);
+  padding: 6px 10px; font-size: var(--t-lab); color: var(--fg2); white-space: nowrap;
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity .14s var(--ease), transform .14s var(--ease);
+  box-shadow: 0 10px 24px -10px rgba(0,0,0,.7);
+}
+.seek:focus-within .tip { opacity: 1; transform: translateY(0); }
+.seek .tip b { color: var(--fg); font-family: var(--mono); font-weight: 600; }
+
+.tools { display: flex; gap: 4px; align-items: center; margin-left: auto; flex-wrap: wrap; min-height: 0; }
+.tb {
+  padding: 8px 11px; font-size: var(--t-lab); font-weight: 500; letter-spacing: .02em;
+  color: var(--fg2); background: var(--s1); border: 1px solid var(--line);
+  border-radius: var(--r2); white-space: nowrap;
+  transition: background .13s var(--ease), color .13s var(--ease), border-color .13s var(--ease);
+}
+.tb:hover { color: var(--fg); background: var(--s3); border-color: var(--line2); }
+.tb:active { transform: translateY(.5px); }
+.tb[data-on="1"] {
+  color: var(--accent); border-color: var(--accent); font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.tb[disabled] { opacity: .32; cursor: default; }
+.tb[disabled]:hover { color: var(--fg2); background: var(--s1); border-color: var(--line); }
+.tb.warn:hover { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+
+/* ── Best-available strip ───────────────────────────────────────────── */
+.strip { display: grid; gap: var(--gap); flex: none; grid-template-columns: repeat(6, minmax(0,1fr)); }
+.bc {
+  text-align: left; padding: 8px 11px 9px; overflow: hidden; position: relative;
+  display: flex; flex-direction: column; gap: 1px;
+  transition: border-color .13s var(--ease), transform .13s var(--ease);
+}
+.bc::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--pc); border-radius: var(--r) 0 0 var(--r);
+}
+.bc:hover { border-color: color-mix(in srgb, var(--pc) 55%, transparent); transform: translateY(-1px); }
+.bc[disabled], .bc[disabled]:hover { cursor: default; transform: none; }
+.bc .p {
+  font-size: var(--t-lab); font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--pc);
+}
+.bc .n { font-size: var(--t-nm); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc .m {
+  font-family: var(--mono); font-size: var(--t-fig); color: var(--fg3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bc .m .tm { color: var(--typ); font-weight: 600; }
+.bc .m .no { color: var(--num); }
+.bc .m .ad { color: var(--str); }
+.bc .m .sep { color: var(--fg3); opacity: .45; }
+.bc .cliff {
+  align-self: flex-start; margin-top: 4px; padding: 2px 6px; border-radius: 20px;
+  font-size: var(--t-lab); font-weight: 700; letter-spacing: .03em;
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+}
+
+/* ── Board ─────────────────────────────────────────────────────────── */
+.board {
+  flex: 1 1 auto; min-height: 0; display: grid; gap: var(--gap);
+  grid-template-columns: repeat(6, minmax(0,1fr)) clamp(190px, 15vw, 250px);
+}
+.col, .rail { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.col { container-type: inline-size; }
+.hid { display: none !important; }
+
+.chd {
+  display: flex; align-items: center; gap: 8px; padding: 9px var(--pad) 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--pc) 28%, transparent); flex: none;
+}
+.chd .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
+  border: 2px solid var(--pc);
+}
+.chd h2 { margin: 0; font-size: var(--t-hd); font-weight: 700; letter-spacing: .02em; color: var(--fg); }
+.chd .ct { margin-left: auto; font-family: var(--mono); font-size: var(--t-fig); color: var(--fg3); }
+
+.list { flex: 1 1 auto; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--s4) transparent; }
+.list::-webkit-scrollbar { width: 9px; }
+.list::-webkit-scrollbar-track { background: transparent; }
+.list::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+.list::-webkit-scrollbar-thumb:hover { background: var(--fg3); background-clip: padding-box; }
+
+/* Tier headers stick while you scroll a long column. */
+.band {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px var(--pad) 5px;
+  background: color-mix(in srgb, var(--s1) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-lab); font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--kw, var(--fg3));
+}
+.band i { flex: 1; height: 1px; background: var(--line); }
+.band em {
+  font-style: normal; font-family: var(--mono); letter-spacing: 0;
+  color: var(--num); font-weight: 700;
+}
+.band .rem { letter-spacing: 0; font-weight: 500; color: var(--fg3); text-transform: none; }
+
+/* Row: three real grid tracks. The name track is minmax(0,1fr) so it
+   always yields first, and the action track is never overlaid. */
+.row {
+  display: grid; grid-template-columns: 1.85em minmax(0,1fr) minmax(0,auto);
+  gap: 5px; align-items: center;
+  padding: 5px var(--pad) 5px 0;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  transition: background .12s var(--ease);
+}
+.row::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--pc); opacity: .32;
+  transition: opacity .12s var(--ease), width .12s var(--ease);
+}
+.row:hover { background: color-mix(in srgb, var(--s3) 62%, transparent); }
+.row:hover::before { opacity: 1; width: 3px; }
+.row.drag { opacity: .35; }
+.row.before { box-shadow: inset 0 2px 0 0 var(--accent); }
+.row.after { box-shadow: inset 0 -2px 0 0 var(--accent); }
+
+/* Gutter, like editor line numbers. */
+.rk {
+  font-family: var(--mono); font-size: var(--t-rk); font-weight: 500;
+  color: var(--fg3); text-align: right; cursor: grab; user-select: none;
+  padding: 2px 0; border-radius: 3px;
+}
+.rk:active { cursor: grabbing; }
+.row:hover .rk { color: var(--fg2); }
+
+.body { min-width: 0; }
+.l1 { min-width: 0; }
+.nm {
+  font-size: var(--t-nm); font-weight: 500; line-height: 1.32; letter-spacing: -.006em;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row.open .nm { white-space: normal; }
+.v {
+  flex: none; font-family: var(--mono); font-size: var(--t-lab); font-weight: 700;
+  padding: 0 4px; border-radius: 3px; letter-spacing: -.01em;
+  border: 1px solid transparent;
+}
+.v[data-d="up"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.v[data-d="down"] { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.gr {
+  flex: none; font-size: var(--t-lab); font-weight: 700; letter-spacing: .03em;
+  padding: 0 4px; border-radius: 3px; color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+.l2 {
+  font-family: var(--mono); font-size: var(--t-fig); color: var(--cmt, var(--fg3));
+  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Inline, not flex: text-overflow:ellipsis has no effect on a flex
+     container, so the old version hard-clipped mid-token ("adp 27bye").
+     The syntax colours separate the fields, so the dots are gone too —
+     they cost ~49px a row and an editor doesn't use them either. */
+  display: block;
+}
+.l2 > * { display: inline; }
+.l2 .v, .l2 .gr { display: inline-block; vertical-align: 1px; margin-right: 3px; }
+.l2 .tm, .l2 .no, .l2 .ad, .l2 .by, .l2 .st { margin-right: 4px; }
+.l2 .sep { display: none; }
+/* Editor syntax colouring, applied to the figures that behave like literals. */
+.l2 .tm { color: var(--typ); font-weight: 600; }
+.l2 .no { color: var(--num); }
+.l2 .ad { color: var(--str); }
+.l2 .by { color: var(--fg3); }
+.l2 .sep { color: var(--fg3); opacity: .45; }
+.l2 .st { color: var(--warn); }
+.note {
+  display: none; font-size: calc(var(--t-nm) * .9); color: var(--fg2); line-height: 1.55;
+  margin-top: 5px; padding: 6px 9px; border-radius: var(--r2);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--pc) 60%, transparent);
+}
+.row.open .note, .prow.open .pn2 { display: block; }
+
+.acts { display: flex; gap: 3px; align-items: center; flex: none; min-width: 0; }
+.act {
+  border: 1px solid var(--line2); border-radius: var(--r2);
+  padding: 3px 7px; font-size: var(--t-lab); font-weight: 600; letter-spacing: .01em;
+  color: var(--fg3); background: color-mix(in srgb, var(--s1) 70%, transparent);
+  white-space: nowrap; line-height: 1.5; opacity: .72;
+  transition: all .12s var(--ease);
+}
+.row:hover .act, .prow:hover .act, .act:focus-visible { opacity: 1; }
+.act:active { transform: scale(.94); }
+.act.dr:hover { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 35%, transparent); }
+.act.un:hover { color: var(--bad); border-color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bad) 35%, transparent); }
+.act.rt:hover { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.act.star { border-color: transparent; background: none; padding: 4px 5px; font-size: var(--t-nm); }
+.act.star:hover { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.act.star[data-on="1"] { color: var(--warn); opacity: 1; }
+.act .sm { display: none; }
+
+/* When a column is narrow the labels become glyphs. The word still
+   reaches you through the tooltip and the confirmation toast. */
+@container (max-width: 320px) { .l2 .by { display: none; } }
+@container (max-width: 420px) {
+  .act .lg { display: none; }
+  .act .sm { display: inline; }
+  .act { padding: 2px 5px; font-size: calc(var(--t-nm) * .95); }
+  .act.star { padding: 2px 3px; }
+}
+@container (max-width: 250px) {
+  .row { grid-template-columns: 1.7em minmax(0,1fr) minmax(0,auto); gap: 4px; }
+  .act { padding: 2px 4px; }
+}
+
+.row[data-s="gone"] { background: color-mix(in srgb, var(--bad) 6%, transparent); }
+.row[data-s="gone"] .nm { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 80%, transparent); text-decoration-thickness: 1.5px; color: var(--fg3); }
+.row[data-s="gone"]::before { opacity: .14; }
+.row[data-s="gone"] .rk, .row[data-s="mine"] .rk { cursor: default; }
+.row[data-s="mine"] { background: color-mix(in srgb, var(--ok) 11%, transparent); }
+.row[data-s="mine"] .nm { color: var(--ok); font-weight: 600; }
+.row[data-s="mine"]::before { background: var(--ok); opacity: 1; width: 3px; }
+
+.add { padding: 7px var(--pad); border-top: 1px solid var(--line); flex: none; display: flex; gap: 5px; }
+.add input {
+  flex: 1 1 auto; background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--r2); padding: 5px 8px; font-size: var(--t-fig);
+}
+.add input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.add input.tr { flex: 0 0 3em; text-align: center; font-family: var(--mono); }
+.add button {
+  flex: none; padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--r2);
+  font-size: var(--t-lab); font-weight: 600; color: var(--fg3);
+}
+.add button:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* ── Rail ──────────────────────────────────────────────────────────── */
+.rtabs { display: flex; flex: none; padding: 5px; gap: 4px; border-bottom: 1px solid var(--line); }
+.rt {
+  flex: 1 1 0; padding: 7px 5px; border-radius: var(--r2);
+  font-size: var(--t-lab); font-weight: 600; letter-spacing: .02em;
+  color: var(--fg3); display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: all .13s var(--ease);
+}
+.rt:hover { color: var(--fg2); background: color-mix(in srgb, var(--s3) 55%, transparent); }
+.rt .c { font-family: var(--mono); font-weight: 500; opacity: .8; }
+.rt[data-on="1"] { color: var(--fg); background: var(--s3); }
+.rt[data-armed="1"] { color: var(--warn); }
+.rt[data-armed="1"][data-on="1"] { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+
+.slot {
+  display: grid; grid-template-columns: 2.7em minmax(0,1fr); gap: 8px; align-items: center;
+  padding: 6px var(--pad); border-bottom: 1px solid var(--line);
+}
+.slot .l {
+  font-family: var(--mono); font-size: var(--t-lab); font-weight: 600;
+  color: var(--fg3); text-align: right; text-transform: uppercase;
+}
+.slot .vv { font-size: calc(var(--t-nm) * .94); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot.full .vv { color: var(--fg); font-weight: 500; }
+.slot.vac .vv {
+  color: var(--fg3); font-family: var(--mono); font-size: var(--t-fig);
+  border: 1px dashed var(--line2); border-radius: 4px; padding: 2px 7px;
+  display: inline-block;
+}
+
+.pmsg { padding: 9px var(--pad); font-size: var(--t-fig); line-height: 1.6; color: var(--fg3); border-bottom: 1px solid var(--line); }
+.pmsg.on { color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+.pnil { padding: 14px var(--pad); font-size: var(--t-fig); color: var(--fg3); line-height: 1.6; }
+.prow { padding: 7px var(--pad) 8px; border-bottom: 1px solid var(--line); transition: background .12s var(--ease); }
+.prow:hover { background: color-mix(in srgb, var(--s3) 55%, transparent); }
+.pl { display: grid; grid-template-columns: 2.4em minmax(0,1fr) auto; gap: 6px; align-items: center; }
+.pp { font-family: var(--mono); font-size: var(--t-lab); font-weight: 700; }
+.pnm { font-size: calc(var(--t-nm) * .94); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pn2 { display: none; font-size: var(--t-fig); color: var(--fg3); line-height: 1.55; margin-top: 5px; }
+
+.key { padding: 10px var(--pad); border-top: 1px solid var(--line); flex: none; font-size: var(--t-fig); color: var(--fg3); line-height: 2; }
+.key i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 0; }
+
+/* ── Overflow tabs ─────────────────────────────────────────────────── */
+.ptabs { display: none; }
+.pt {
+  flex: 1 0 auto; padding: 8px 14px; border-radius: var(--r2);
+  font-size: var(--t-hd); font-weight: 600; letter-spacing: .02em;
+  color: var(--fg3); background: var(--s1); border: 1px solid var(--line);
+  display: flex; align-items: center; gap: 6px;
+  transition: all .13s var(--ease);
+}
+.pt .c { font-family: var(--mono); font-weight: 500; font-size: var(--t-fig); opacity: .8; }
+.pt:hover { color: var(--fg2); border-color: var(--line2); }
+.pt[data-on="1"] {
+  color: var(--pc); border-color: var(--pc); font-weight: 700;
+  background: color-mix(in srgb, var(--pc) 15%, transparent);
+}
+
+/* ── Sheet ─────────────────────────────────────────────────────────── */
+.scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,.62); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center; z-index: 60; padding: var(--gap);
+}
+.scrim[data-open="1"] { display: flex; }
+.sheet {
+  background: var(--s1); border: 1px solid var(--line2); border-radius: var(--r);
+  width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column;
+  box-shadow: 0 30px 70px -20px rgba(0,0,0,.85);
+}
+.shd { padding: 13px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; flex: none; }
+.shd h2 { margin: 0; font-size: var(--t-hd); font-weight: 700; letter-spacing: .01em; }
+.shd button { margin-left: auto; color: var(--fg3); font-size: 18px; line-height: 1; padding: 0 4px; }
+.shd button:hover { color: var(--fg); }
+.sbd { padding: 16px; overflow-y: auto; }
+.sbd h3 { font-size: var(--t-lab); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--fg3); margin: 21px 0 10px; }
+.sbd h3:first-child { margin-top: 0; }
+.sbd p { font-size: calc(var(--t-nm) * .93); color: var(--fg2); line-height: 1.65; margin: 0 0 10px; }
+.sbd code { font-family: var(--mono); font-size: .93em; color: var(--accent); background: var(--bg); padding: 2px 5px; border-radius: 4px; }
+.g2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px,1fr)); gap: 10px; }
+.fd { display: flex; flex-direction: column; gap: 4px; }
+.fd label { font-size: var(--t-lab); letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+.fd input {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r2);
+  padding: 7px 9px; font-family: var(--mono); font-size: var(--t-nm);
+}
+.fd input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+.rices { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 8px; }
+.rice {
+  text-align: left; padding: 10px 11px 11px; border-radius: var(--r2);
+  border: 1px solid var(--line); background: var(--bg);
+  transition: all .13s var(--ease);
+}
+.rice:hover { border-color: var(--line2); transform: translateY(-1px); }
+.rice[data-on="1"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.rice .rn { font-size: calc(var(--t-nm) * .96); font-weight: 600; display: block; }
+.rice .rd { font-size: var(--t-fig); color: var(--fg3); display: block; margin-top: 2px; line-height: 1.45; }
+.rice .sw { display: flex; gap: 4px; margin-top: 9px; }
+.rice .sw i { width: 15px; height: 15px; border-radius: 4px; }
+
+#paste {
+  width: 100%; min-height: 120px; resize: vertical; background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--r2); padding: 9px;
+  font-family: var(--mono); font-size: var(--t-fig); line-height: 1.6;
+}
+#paste:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.sax { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 60px) scale(.97);
+  background: var(--s3); border: 1px solid var(--line2); border-left: 3px solid var(--accent);
+  border-radius: var(--r2); padding: 10px 16px; font-size: calc(var(--t-nm) * .94);
+  max-width: 90vw; z-index: 70; opacity: 0; pointer-events: none;
+  transition: opacity .17s var(--ease), transform .17s var(--ease);
+  box-shadow: 0 16px 40px -14px rgba(0,0,0,.85);
+}
+.toast[data-show="1"] { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+/* ── Regimes. paneBudget() in JS mirrors these exactly. ─────────────── */
+@media (max-width: 1740px) {
+  .board { grid-template-columns: repeat(5, minmax(0,1fr)) clamp(182px,14vw,232px); }
+  .strip { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .ptabs { display: flex; gap: 4px; overflow-x: auto; flex: none; padding-bottom: 1px; }
+}
+@media (max-width: 1460px) { .board { grid-template-columns: repeat(4, minmax(0,1fr)) clamp(176px,14vw,220px); } }
+@media (max-width: 1180px) {
+  .board { grid-template-columns: repeat(3, minmax(0,1fr)) clamp(170px,16vw,210px); }
+  .strip { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 940px) {
+  body { overflow: auto; height: auto; min-height: 100%; }
+  .strip { display: none; }
+  .board { grid-template-columns: minmax(0,1fr); }
+  .col { min-height: 56vh; }
+  .list { max-height: 60vh; }
+  .rail { min-height: 300px; }
+  .seek { flex: 1 1 100%; }
+  .act { opacity: 1; padding: 6px 10px; }
+}
+@media (max-width: 560px) {
+  .tools { width: 100%; margin-left: 0; }
+  .tb { flex: 1 1 auto; justify-content: center; text-align: center; }
+  .clock { flex: 1 1 auto; }
+}
+
+/* ── Compact density ───────────────────────────────────────────────── */
+[data-density="compact"] .row { padding-top: 1px; padding-bottom: 1px; }
+[data-density="compact"] .l1 { gap: 5px; }
+[data-density="compact"] .nm { line-height: 1.22; }
+[data-density="compact"] .l2 { font-size: calc(var(--t-fig) * .94); margin-top: 0; }
+[data-density="compact"] .band { padding-top: 3px; padding-bottom: 3px; }
+[data-density="compact"] .act { padding-top: 2px; padding-bottom: 2px; }
+[data-density="compact"] .slot { padding-top: 3px; padding-bottom: 3px; }
+[data-density="compact"] .prow { padding-top: 4px; padding-bottom: 5px; }
+[data-density="compact"] .chd { padding-top: 6px; padding-bottom: 5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="bar">
+  <div class="brand card"><i class="mk"></i><b>Draft Room</b><span id="fmt">—</span></div>
+
+  <div class="clock card" id="clock">
+    <span class="big fig" id="pick">1.01</span>
+    <span class="col2"><span class="k">On the clock</span><span class="w" id="upnext">—</span></span>
+  </div>
+
+  <label class="seek card">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="6.8" cy="6.8" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M10.4 10.4 14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <input id="find" type="text" placeholder="Search players" autocomplete="off" spellcheck="false" aria-label="Search players">
+    <kbd>/</kbd>
+    <span class="tip"><b>↵</b> mark unavailable &nbsp; <b>⇧↵</b> draft to my team</span>
+  </label>
+
+  <div class="tools">
+    <button class="tb" id="undo" disabled title="Undo the last change (Ctrl+Z)">Undo</button>
+    <button class="tb" id="tTaken" title="Hide players already off the board">Taken</button>
+    <button class="tb" id="tStar" title="Show only the sleeper pool">Sleepers</button>
+    <button class="tb" id="tNotes" title="Show scouting notes on every row">Notes</button>
+    <button class="tb" id="tVal" title="Sort each column by value against ADP">Value</button>
+    <button class="tb" id="tDense" title="Tighter rows — fits about a third more on screen">Compact</button>
+    <button class="tb" id="cfg" title="Palette, league setup, rankings refresh">Setup</button>
+  </div>
+</div>
+
+<div class="strip" id="strip"></div>
+<div class="ptabs" id="ptabs"></div>
+<div class="board" id="board"></div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Setup">
+    <div class="shd"><h2>Setup</h2><button id="cfgX" aria-label="Close">✕</button></div>
+    <div class="sbd">
+      <h3>Palette</h3>
+      <div class="rices" id="rices"></div>
+
+      <h3>League</h3>
+      <div class="g2">
+        <div class="fd"><label for="s_teams">Teams</label><input id="s_teams" type="number" min="2" max="20"></div>
+        <div class="fd"><label for="s_slot">My slot</label><input id="s_slot" type="number" min="1" max="20"></div>
+        <div class="fd"><label for="s_poolRound">Pool opens</label><input id="s_poolRound" type="number" min="1" max="20"></div>
+      </div>
+
+      <h3>Starting lineup</h3>
+      <div class="g2">
+        <div class="fd"><label for="s_QB">QB</label><input id="s_QB" type="number" min="0" max="4"></div>
+        <div class="fd"><label for="s_RB">RB</label><input id="s_RB" type="number" min="0" max="6"></div>
+        <div class="fd"><label for="s_WR">WR</label><input id="s_WR" type="number" min="0" max="6"></div>
+        <div class="fd"><label for="s_TE">TE</label><input id="s_TE" type="number" min="0" max="4"></div>
+        <div class="fd"><label for="s_FLEX">Flex</label><input id="s_FLEX" type="number" min="0" max="4"></div>
+        <div class="fd"><label for="s_K">K</label><input id="s_K" type="number" min="0" max="2"></div>
+        <div class="fd"><label for="s_DST">DST</label><input id="s_DST" type="number" min="0" max="2"></div>
+        <div class="fd"><label for="s_BN">Bench</label><input id="s_BN" type="number" min="0" max="14"></div>
+      </div>
+
+      <h3>Refresh rankings</h3>
+      <p>Paste a rankings table. Rank, ADP, tier, bye and team update in place; your re-ordering and every logged pick survive. Tab, comma, pipe and markdown all parse.</p>
+      <p><code>rank · name · pos · team · bye · adp</code></p>
+      <textarea id="paste" placeholder="1&#9;Jahmyr Gibbs&#9;RB&#9;DET&#9;6&#9;1&#10;2&#9;Bijan Robinson&#9;RB&#9;ATL&#9;11&#9;2"></textarea>
+      <div class="sax" style="margin-top:9px">
+        <button class="tb" id="applyPaste">Apply as rankings</button>
+        <button class="tb" id="markGone">Apply as taken list</button>
+      </div>
+
+      <h3>Backups</h3>
+      <p>The board saves itself. Export before draft day so a closed tab can't cost you anything.</p>
+      <div class="sax">
+        <button class="tb" id="exp">Export</button>
+        <button class="tb" id="imp">Import</button>
+        <button class="tb warn" id="clearP">Clear picks</button>
+        <button class="tb warn" id="reset">Reset board</button>
+      </div>
+      <input type="file" id="impf" accept=".json,application/json" hidden>
+
+      <h3>Where the numbers come from</h3>
+      <p id="vintage"></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const VINTAGE = "Rankings and ADP: September 3, 2026 (4for4 multi-site). Kicker and defense order: August 6 composite — no fresher public board, and they are last-round picks. Week 1 kicks off Wednesday, September 9.";
+
+const POS = [
+  { id:"QB",  c:"var(--qb)"  },
+  { id:"RB",  c:"var(--rb)"  },
+  { id:"WR",  c:"var(--wr)"  },
+  { id:"TE",  c:"var(--te)"  },
+  { id:"K",   c:"var(--k)"   },
+  { id:"DST", c:"var(--dst)" }
+];
+
+const SLEEPERS = {
+  "MarShawn Lloyd":"A", "Jonathon Brooks":"A",
+  "Kenneth Gainwell":"B", "Chris Godwin":"B", "Jayden Reed":"B", "Mark Andrews":"B",
+  "Jadarian Price":"B", "George Kittle":"B",
+  "Jacory Croskey-Merritt":"C", "Jordan Mason":"C", "Chris Rodriguez":"C",
+  "Greg Dulcich":"C", "Chig Okonkwo":"C", "Brenton Strange":"C", "Hunter Henry":"C",
+  "Terrance Ferguson":"C", "Juwan Johnson":"C", "Isaiah Likely":"C",
+  "Dalton Kincaid":"C", "Quinshon Judkins":"C", "Rico Dowdle":"C",
+  "Brock Purdy":"C", "Christian Watson":"C", "Deebo Samuel":"C"
+};
+
+const SEED = {
+QB: [
+["Josh Allen","BUF",1,22,27,7,"Projected for nearly 24 more fantasy points than any other QB and the only passer inside the overall top 30. Top-three finish in each of the last six seasons."],
+["Lamar Jackson","BAL",2,43,45,13,"Sits 21 overall spots behind Allen but more than 20 projected points ahead of QB3. The cheapest route to a difference-making QB."],
+["Drake Maye","NE",3,62,58,11,"2025 MVP runner-up. Tier 3 is separated by under four projected points, so this is preference, not hierarchy. Six-pick market premium."],
+["Joe Burrow","CIN",3,66,60,6,"Rose three spots but still carries a six-pick premium. Availability is the whole thesis after missing nine games with a toe injury."],
+["Jayden Daniels","WAS",3,67,67,7,"Priced exactly at market now — the August discount is gone. Still a top-tier rushing floor."],
+["Jalen Hurts","PHI",3,69,70,10,"The sneak package remains the most reliable rushing-TD source in football."],
+["Caleb Williams","CHI",4,77,72,10,"Tier 4 is separated by under three projected points. No reason to force the first name off this shelf."],
+["Dak Prescott","DAL",4,82,79,14,"Highest floor of the waiting tier, pass-heavy offense."],
+["Justin Herbert","LAC",4,83,83,7,"New OC Mike McDaniel. Exactly at market."],
+["Trevor Lawrence","JAX",4,84,85,7,"Upgraded pass catchers, essentially at market."],
+["Brock Purdy","SF",5,100,106,8,"The strongest later discount at the position, six spots ahead of market. San Francisco has one of the two hardest Week 14-17 schedules."],
+["Patrick Mahomes","KC",5,105,109,5,"Stale offense, new OC, but a nine-pick discount is a fair price on the floor."],
+["Jaxson Dart","NYG",5,106,102,8,"Market premium — you have to reach four spots. The Dart-Nabers stack is the reason to bother."],
+["Bo Nix","DEN",6,110,112,10,"Waddle arrives as a genuine weapon upgrade."],
+["Matthew Stafford","LAR",6,112,105,11,"The largest premium among late QBs at seven picks. Elite offense, age 38."],
+["Jared Goff","DET",6,117,118,6,"High floor, no rushing value, at market."]
+],
+RB: [
+["Jahmyr Gibbs","DET",1,1,1,6,"The consensus 1.01. Finished RB3 at 21.6 PPG with Montgomery still there; Montgomery is now in Houston."],
+["Bijan Robinson","ATL",1,2,2,11,"1,478 rush yards plus 79 catches. Led the NFL in yards after contact and forced missed tackles despite ranking only fifth in carries."],
+["Jonathan Taylor","IND",1,4,7,13,"Averaged 25.2 half-PPR through ten games with Jones healthy. Led the NFL with 323 carries. A three-pick discount on a foundational back."],
+["Christian McCaffrey","SF",1,7,6,8,"A projection drop of more than 35 points begins after him — the clearest tier boundary at the position. Age 30 with 450 touches in 2025."],
+["James Cook","BUF",2,9,9,7,"Led the NFL in rushing, 1,912 scrimmage yards, 32 TDs over two seasons."],
+["Chase Brown","CIN",2,10,12,6,"The last back inside the overall top ten. Unquestioned lead role in a premier scoring offense."],
+["De'Von Achane","MIA",3,11,14,6,"145 catches over two years, league-best 5.7 YPC. Now the only relevant Miami skill player, for better and worse."],
+["Saquon Barkley","PHI",3,12,13,10,"Down to 14.5 PPR PPG from 22.2 in 2024. With A.J. Brown gone there is a case for more passing-game work."],
+["Kenneth Walker III","KC",3,14,16,5,"Super Bowl MVP, then signed with KC. The Chiefs had the worst missed-tackle rate of any backfield in the league — he is the direct fix."],
+["Omarion Hampton","LAC",3,15,15,7,"Rose three spots to RB10. At market."],
+["Derrick Henry","BAL",3,16,17,13,"TD-dependent, but Baltimore projects as a top-five offense."],
+["Ashton Jeanty","LV",3,20,18,13,"Held at RB12 and is now taken only two spots ahead of ranking, so the August overpricing has mostly corrected."],
+["Javonte Williams","DAL",4,23,32,14,"Rose four spots and now ranks nine ahead of ADP — one of the better values in the first four rounds."],
+["Kyren Williams","LAR",4,25,29,11,"Volume and touchdowns in an elite offense, four-pick discount."],
+["Jeremiyah Love","ARI",4,28,30,14,"Record RB guarantees at $50.5M. Bad line, unsettled QB, crowded room — but the last clear RB1 bet."],
+["Cam Skattebo","NYG",4,32,43,8,"Leads his tier with an 11-pick discount after rising to RB16. The largest early-round bargain on the board."],
+["Breece Hall","NYJ",5,33,33,13,"Gained three spots, sits at market. Fine flex."],
+["Travis Etienne","NO",5,35,37,8,"Rose five spots after landing in New Orleans."],
+["D'Andre Swift","CHI",5,42,44,10,"Ben Johnson runs balanced; whoever consolidates Chicago's touches has RB2 value."],
+["Quinshon Judkins","CLE",5,44,51,11,"Best market value in the tier at seven picks ahead of ADP."],
+["Bucky Irving","TB",6,45,49,10,"Gainwell and Sean Tucker cap the ceiling, but the price finally reflects it."],
+["David Montgomery","HOU",6,47,47,8,"Clear early-down role in a new home."],
+["Jadarian Price","SEA",6,50,57,11,"Rose sharply. Walker gone and Charbonnet coming off an ACL tear — Seattle ran 405 times last year. Seven-pick discount."],
+["Bhayshul Tuten","JAX",6,51,55,7,"Drafted as the presumed lead of a new backfield; Chris Rodriguez may make that closer than the market thinks."],
+["Rhamondre Stevenson","NE",6,56,65,11,"Nine-pick discount. The Henderson pass-protection struggles are exactly why."],
+["TreVeyon Henderson","NE",6,57,62,11,"Recovered some ground since August but still behind Stevenson on the depth chart."],
+["Jaylen Warren","PIT",6,61,69,9,"Eight picks ahead of market."],
+["Jonathon Brooks","CAR",6,63,74,5,"SLEEPER: 11-pick discount, and now 52 overall spots ahead of Hubbard. Two ACL tears in the same knee is the risk you are buying."],
+["Rico Dowdle","PIT",7,70,81,9,"An 11-pick discount, best in his tier."],
+["Tony Pollard","TEN",7,71,77,9,"Six spots ahead of market."],
+["Kenneth Gainwell","TB",7,85,93,10,"SLEEPER: averaged 14.4 touches and 11.8 half-PPR PPG from Week 8 on in Pittsburgh. Joins a Tampa backfield with 174 vacated RB opportunities."],
+["Jordan Mason","MIN",8,90,98,6,"SLEEPER: eight-pick discount, standalone flex upside if the role expands."],
+["MarShawn Lloyd","GB",8,91,119,11,"TOP SLEEPER: rose 56 spots after Jacobs hit the Commissioner Exempt List. A 28-pick discount, the largest actionable gap on the board."],
+["RJ Harvey","DEN",8,92,88,10,"Four-pick premium."],
+["Jacory Croskey-Merritt","WAS",8,94,101,7,"SLEEPER: Washington has 126 vacated carries. Thin receiving résumé, so RB3/RB4 at best."],
+["Blake Corum","LAR",8,96,91,11,"REVERSED since August: now a five-pick premium rather than a discount. Still the handcuff, but the free value is gone."],
+["Chris Rodriguez","JAX",8,123,127,7,"SLEEPER: played for Liam Coen at Kentucky and ranked seventh among RBs in yards after contact per attempt. Rounds cheaper than Tuten."],
+["Josh Jacobs","GB",9,999,64,11,"OFF THE BOARD: removed from rankings after being placed on the Commissioner Exempt List. No dependable return timeline. His ADP of 64 is a bet on availability the projections do not support."]
+],
+WR: [
+["Ja'Marr Chase","CIN",1,3,3,6,"Led the NFL with 185 targets and still finished WR3 per game with Burrow out nine games. Most PPR points of any WR through five seasons."],
+["Jaxon Smith-Njigba","SEA",1,5,5,11,"Rose two spots to WR2. Led the league in receiving yards, target share (36%) and air-yards share (49%). Reigning Offensive Player of the Year."],
+["Puka Nacua","LAR",1,6,4,11,"129 catches, 1,715 yards, and league bests in yards per route and target rate per route. Now a two-pick premium after slipping behind JSN."],
+["Amon-Ra St. Brown","DET",2,8,8,6,"Three straight WR4 finishes and projected to lead the NFL in receptions."],
+["Justin Jefferson","MIN",2,13,11,6,"Two-pick premium. Kyler Murray versus J.J. McCarthy is the swing factor."],
+["Drake London","ATL",3,17,21,11,"The value of his tier at four spots ahead of market. Atlanta's QB situation is the discount."],
+["CeeDee Lamb","DAL",3,18,10,14,"The biggest premium in the top 20 — you must reach eight spots. Pickens caps the TD upside."],
+["A.J. Brown","NE",3,19,20,11,"Traded to New England. No lower than seventh in target share in each of the last seven seasons, now with the league's most explosive play-action offense."],
+["Nico Collins","HOU",4,24,22,8,"Tier 4 is separated by fewer than seven projected points, so price should decide."],
+["George Pickens","DAL",4,27,23,14,"Fell three spots; now a four-pick premium."],
+["Chris Olave","NO",4,29,26,8,"Kellen Moore's offense is genuinely pass-heavy."],
+["Malik Nabers","NYG",4,30,25,8,"Cleared his ACL rehab and is practicing. A five-pick premium is the price of that recovery news."],
+["DeVonta Smith","PHI",4,31,31,10,"At market. Absorbing A.J. Brown's vacated targets."],
+["Tee Higgins","CIN",4,34,35,6,"The other half of the best passing offense, with Burrow risk baked in."],
+["Garrett Wilson","NYJ",4,36,36,13,"Cleared camp with no limitations. New OC Frank Reich."],
+["Ladd McConkey","LAC",5,37,40,7,"Three-pick discount. New OC Mike McDaniel."],
+["Rashee Rice","KC",5,38,28,5,"THE LARGEST PREMIUM IN THE TIER: fell five spots and is drafted ten ahead of ranking. KC's offense revolves around him, but you are paying for all of it."],
+["Zay Flowers","BAL",5,39,34,13,"Five-pick premium."],
+["Jaylen Waddle","DEN",5,40,42,10,"Two-pick discount in what CBS called an incredible situation."],
+["Tetairoa McMillan","CAR",5,41,39,5,"The last comfortable WR2 pocket ends here."],
+["Davante Adams","LAR",6,48,52,11,"Four-pick discount."],
+["Emeka Egbuka","TB",6,49,41,10,"Fell seven spots and now sits eight behind ADP. Godwin is the cheaper route into the same vacated Tampa volume."],
+["Luther Burden III","CHI",6,52,48,10,"Four-pick premium."],
+["D.J. Moore","BUF",7,53,46,7,"Seven-pick premium as Josh Allen's new top target."],
+["Terry McLaurin","WAS",7,54,50,7,"Four-pick premium."],
+["Christian Watson","GB",7,55,61,11,"SLEEPER: the best discount across tiers 6 and 7 at six picks. Green Bay has 135 vacated targets."],
+["Jameson Williams","DET",8,58,54,6,"Four-pick premium."],
+["Rome Odunze","CHI",8,60,56,10,"Four-pick premium."],
+["Parker Washington","JAX",8,64,59,7,"Five-pick premium."],
+["Mike Evans","SF",8,68,63,8,"Age 33 and coming off nine missed games. Five-pick premium."],
+["DK Metcalf","PIT",8,73,76,9,"Three-pick discount."],
+["Brian Thomas Jr.","JAX",8,74,73,7,"At market."],
+["Chris Godwin","TB",8,75,84,10,"SLEEPER: nine-pick discount. Evans' exit frees 116 targets and a third of Tampa's red-zone looks. Best fit is the slot, where he has always produced."],
+["Carnell Tate","TEN",8,76,68,9,"REVERSED since August: fell six spots and is now an eight-pick premium. The rookie hype outran the projection."],
+["Quentin Johnston","LAC",8,79,87,7,"Eight-pick discount."],
+["Marvin Harrison Jr.","ARI",9,86,66,14,"THE BIGGEST PREMIUM ON THE BOARD: drafted 20 spots ahead of his ranking. Avoid at cost."],
+["Courtland Sutton","DEN",9,87,82,10,"Five-pick premium."],
+["Michael Wilson","ARI",9,88,86,14,"At market."],
+["Jayden Reed","GB",9,89,100,11,"SLEEPER: 11-pick discount. Two prior top-25 finishes buried by an injury-hit 2025. Slot usage fits Green Bay's 135 vacated targets."],
+["Alec Pierce","IND",9,93,95,13,"Off PUP and back. Two-pick discount."],
+["Josh Downs","IND",9,95,97,13,"Rose six spots — returns to the slot in three-wide sets. Near market."],
+["Michael Pittman Jr.","PIT",9,97,94,9,"Three-pick premium."],
+["Wan'Dale Robinson","TEN",10,99,103,9,"Four-pick discount."],
+["Jordan Addison","MIN",10,101,99,6,"Rose nine spots, sits just outside the top 100."],
+["Stefon Diggs","WAS",10,103,96,7,"Signed with Washington. Seven-pick premium."],
+["Makai Lemon","PHI",10,107,104,10,"Hamstring trouble twice in camp."],
+["De'Zhaun Stribling","SF",10,111,107,8,"Rose nine spots to WR47 with Pearsall out for the year, but the market got there first — four-pick premium."],
+["Matthew Golden","GB",10,113,111,11,"Holds the final published WR spot."],
+["Deebo Samuel","SF",11,120,113,8,"SLEEPER: still a seven-pick value even after slipping three spots."],
+["Jakobi Meyers","JAX",11,124,118,7,"Just beyond the published table at WR50."],
+["Xavier Worthy","KC",11,140,132,5,"DROPPED OUT of the published WR top 48 entirely since August. Rice is the focal point; treat Worthy as a dart, not a target."],
+["Jordyn Tyson","NO",11,165,158,8,"REVERSED HARD since August: now described as outside the ordinary redraft range. Leave him to the final rounds or the waiver wire."]
+],
+TE: [
+["Brock Bowers","LV",1,21,19,13,"Holds the rookie TE fantasy record. Two-pick premium, and fewer than three projected points separate him from McBride."],
+["Trey McBride","ARI",1,26,24,14,"All-time TE receptions record at 126. Two-pick premium. Arizona's QB room is the entire risk."],
+["Colston Loveland","CHI",2,46,38,10,"Averaged 11.9 half-PPR PPG from Week 9 on as a rookie. REVERSED since August: now an eight-pick premium, so the free value is gone."],
+["Tyler Warren","IND",2,59,53,13,"Six-pick premium now. Still a genuine breakout path."],
+["Tucker Kraft","GB",2,65,71,11,"BEST VALUE AT THE POSITION: six picks behind his ranking. Averaged 14.0 half-PPR before his ACL tear and led all qualifying pass catchers in yards after catch per reception."],
+["Sam LaPorta","DET",3,72,75,6,"Rose four spots back into the top 75, alone between the breakout targets and the mid-round group."],
+["Kyle Pitts","ATL",4,78,78,11,"Rose five spots. Exactly at market, so preference decides."],
+["Harold Fannin Jr.","CLE",4,80,80,11,"Slipped one spot. Exactly at market."],
+["George Kittle","SF",5,81,89,8,"SLEEPER: rose six spots for an eight-pick discount. Achilles recovery means early-season risk and second-half league-winning upside."],
+["Travis Kelce","KC",6,102,108,5,"Six-pick discount at age 36."],
+["Isaiah Likely","NYG",6,104,115,8,"SLEEPER: 11 spots ahead of market and finally has a path to a featured role in New York."],
+["Dalton Kincaid","BUF",6,108,113,7,"SLEEPER: elite per-route production; breaks out if Buffalo raises his route participation."],
+["Dallas Goedert","PHI",6,109,114,10,"Five-pick discount."],
+["Mark Andrews","BAL",6,114,125,13,"SLEEPER: 11-pick discount. Likely is gone to New York, leaving far less competition for tight end targets, and the Jackson connection is intact."],
+["Jake Ferguson","DAL",6,116,122,14,"Six-pick discount."],
+["Juwan Johnson","NO",7,122,139,8,"SLEEPER: 17 picks behind his ranking — a genuinely cheap streaming starter."],
+["Brenton Strange","JAX",7,126,145,7,"SLEEPER: rose two spots and sits 19 ahead of market."],
+["Hunter Henry","NE",7,133,147,11,"SLEEPER: 14-pick discount catching passes from Maye."],
+["Chig Okonkwo","WAS",7,138,163,7,"SLEEPER: leads the deep group at 25 spots ahead of market."],
+["Terrance Ferguson","LAR",7,143,167,11,"SLEEPER: 24 picks behind ranking. Strong second-TE pairing."],
+["Greg Dulcich","MIA",8,156,183,6,"SLEEPER: 27-pick discount. Miami has 240 vacated targets including 69 at tight end. Durability is the obvious concern."]
+],
+K: [
+["Brandon Aubrey","DAL",1,175,null,14,"35-of-44 from 50+ over three years and the NFL record with six field goals of 60+."],
+["Cameron Dicker","LAC",1,177,null,7,"SI's number one overall kicker."],
+["Ka'imi Fairbairn","HOU",1,179,null,8,"Led all kickers at 12.9 fantasy PPG in 2025, a full point clear of second."],
+["Jason Myers","SEA",1,181,null,11,"Champions' kicker, 2025 runner-up in points per game."],
+["Evan McPherson","CIN",2,183,null,6,"Attached to a potential top-five offense."],
+["Harrison Mevis","LAR",2,185,null,11,"12-of-13 FG and 39-of-39 XP after joining midseason, then 6-of-6 in the playoffs."],
+["Tyler Loop","BAL",2,187,null,13,"88.2% as a rookie on a top-five projected offense."],
+["Will Reichard","MIN",3,189,null,6,"94.3% accurate but capped by a below-average offense."],
+["Wil Lutz","DEN",3,191,null,10,""],
+["Harrison Butker","KC",3,193,null,5,""],
+["Cairo Santos","CHI",3,195,null,10,""],
+["Andy Borregales","NE",3,197,null,11,"RotoWire's named sleeper."],
+["Chris Boswell","PIT",4,199,null,9,"19-for-22 beyond 40 yards but only 23rd in accuracy."],
+["Jake Elliott","PHI",4,201,null,10,"SI: do not draft."],
+["Jake Moody","SF",4,203,null,8,"SI: do not draft."]
+],
+DST: [
+["Seahawks","SEA",1,176,null,11,"Highest-scoring DST in 2025 while allowing the fewest points per game in the NFL at 17.2. Top five two straight years under Macdonald."],
+["Texans","HOU",1,178,null,8,"Projected number one, but the schedule is brutal: Bills, Bengals, Colts, Cowboys to open."],
+["Rams","LAR",1,180,null,11,"Highest-upside elite unit. Added Myles Garrett."],
+["Broncos","DEN",1,182,null,10,"Plug-and-play every week."],
+["Ravens","BAL",2,184,null,13,"BEST SCHEDULE VALUE: new HC Jesse Minter and the second-easiest slate through six weeks."],
+["Vikings","MIN",2,186,null,6,"Fifth-highest scoring in 2025, but 25th in turnover margin and due for injury regression. Boom or bust."],
+["Steelers","PIT",2,188,null,9,"Fourth in projections but has slid two straight seasons."],
+["Eagles","PHI",2,190,null,10,""],
+["Lions","DET",3,192,null,6,""],
+["Bills","BUF",3,194,null,7,""],
+["Giants","NYG",3,196,null,8,"Stellar pass rush despite losing Dexter Lawrence."],
+["49ers","SF",3,198,null,8,"Upside on Fred Warner's return."],
+["Titans","TEN",3,200,null,9,"Robert Saleh arrives."],
+["Packers","GB",3,202,null,11,"Green Bay didn't win a game after losing Micah Parsons. Hard to trust until he's back."]
+]
+};
+
+
+const KEY = "draftboard.2026.v3";
+const DEFAULTS = { teams:12, slot:3, QB:1, RB:2, WR:3, TE:1, FLEX:1, K:1, DST:1, BN:6, poolRound:8, theme:"mocha", dense:false };
+
+let state = null;
+let hist = [];
+let memOnly = false;
+let activePos = "RB";
+let railTab = "team";
+let ui = { hideTaken:false, notes:false, starOnly:false, byValue:false, q:"" };
+
+function buildSeed() {
+  const players = []; let n = 0;
+  POS.forEach(p => (SEED[p.id] || []).forEach((r, i) => {
+    players.push({
+      id:"p"+(++n), name:r[0], team:r[1], pos:p.id, tier:r[2],
+      ovr:r[3], adp:r[4], bye:r[5], note:r[6] || "",
+      sleeper:SLEEPERS[r[0]] || null, starred:false,
+      order:i, status:"available", pickNo:null
+    });
+  }));
+  return { players, settings:{...DEFAULTS}, nextPick:1, seq:n, poolShown:false };
+}
+
+/* ── Persistence ────────────────────────────────────────────────────── */
+let saveT = null;
+function save() {
+  clearTimeout(saveT);
+  saveT = setTimeout(async () => {
+    if (memOnly) return;
+    try {
+      if (!window.storage || typeof window.storage.set !== "function") { memOnly = true; return; }
+      await window.storage.set(KEY, JSON.stringify(state));
+    } catch (e) { memOnly = true; }
+  }, 250);
+}
+async function load() {
+  try {
+    if (!window.storage || typeof window.storage.get !== "function") { memOnly = true; return null; }
+    const r = await window.storage.get(KEY);
+    if (r && r.value) return JSON.parse(r.value);
+  } catch (e) {}
+  return null;
+}
+
+function commit(label) {
+  hist.push({ label, snap: JSON.stringify(state) });
+  if (hist.length > 60) hist.shift();
+}
+function undo() {
+  const s = hist.pop(); if (!s) return;
+  state = JSON.parse(s.snap); render(); save(); toast("undid: " + s.label);
+}
+
+/* ── Selectors ─────────────────────────────────────────────────────── */
+const byPos = pos => {
+  const l = state.players.filter(p => p.pos === pos);
+  return ui.byValue
+    ? l.sort((a,b) => valOf(b) - valOf(a) || a.ovr - b.ovr)
+    : l.sort((a,b) => a.order - b.order);
+};
+const availIn = pos => byPos(pos).filter(p => p.status === "available");
+const valOf = p => (p.adp == null || p.ovr == null || p.ovr >= 999) ? 0 : p.adp - p.ovr;
+
+function curRound() { return Math.floor((state.nextPick - 1) / Math.max(2, state.settings.teams)) + 1; }
+function pickLabel(n) {
+  const t = Math.max(2, state.settings.teams);
+  return (Math.floor((n-1)/t)+1) + "." + String(((n-1)%t)+1).padStart(2,"0");
+}
+function isMyPick(n) {
+  const t = Math.max(2, state.settings.teams);
+  const slot = Math.min(Math.max(1, state.settings.slot), t);
+  const rd = Math.floor((n-1)/t)+1, inRd = ((n-1)%t)+1;
+  return inRd === (rd % 2 === 1 ? slot : t - slot + 1);
+}
+function nextMyPick() {
+  for (let n = state.nextPick; n < state.nextPick + 500; n++) if (isMyPick(n)) return n;
+  return null;
+}
+const matches = (p, q) => !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.team.toLowerCase().includes(q.toLowerCase());
+
+function sleeperPool() {
+  const rk = { A:0, B:1, C:2, U:3 };
+  return state.players
+    .filter(p => p.status === "available" && (p.sleeper || p.starred))
+    .map(p => ({ p, g: p.sleeper || "U" }))
+    .sort((a,b) => rk[a.g]-rk[b.g] ||
+      POS.findIndex(x=>x.id===a.p.pos) - POS.findIndex(x=>x.id===b.p.pos) ||
+      a.p.ovr - b.p.ovr);
+}
+
+/* ── Mutations ─────────────────────────────────────────────────────── */
+function setStatus(id, status) {
+  const p = state.players.find(x => x.id === id); if (!p) return;
+  commit((status === "mine" ? "drafted " : "crossed off ") + p.name);
+  p.status = status; p.pickNo = state.nextPick; state.nextPick++;
+  armPool(); render(); save();
+}
+function release(id) {
+  const p = state.players.find(x => x.id === id); if (!p) return;
+  commit("returned " + p.name);
+  const was = p.pickNo; p.status = "available"; p.pickNo = null;
+  if (was && was === state.nextPick - 1) state.nextPick--;
+  render(); save();
+}
+function armPool() {
+  if (state.poolShown) return;
+  if (curRound() < Math.max(1, state.settings.poolRound || 8)) return;
+  state.poolShown = true; railTab = "pool";
+  toast("round " + curRound() + " — sleeper pool open, " + sleeperPool().length + " left");
+}
+function toggleStar(id) {
+  const p = state.players.find(x => x.id === id); if (!p) return;
+  const on = !!(p.sleeper || p.starred);
+  commit((on ? "unstarred " : "starred ") + p.name);
+  if (on) { p.sleeper = null; p.starred = false; } else p.starred = true;
+  render(); save();
+}
+function nudge(id, dir) {
+  if (ui.byValue) return toast("turn off value sort to re-rank");
+  const p = state.players.find(x => x.id === id); if (!p) return;
+  const l = byPos(p.pos), i = l.indexOf(p), j = i + dir;
+  if (j < 0 || j >= l.length) return;
+  commit("moved " + p.name);
+  const a = l[i].order; l[i].order = l[j].order; l[j].order = a;
+  render(); save();
+}
+function moveTo(dragId, targetId, after) {
+  if (ui.byValue) return;
+  const d = state.players.find(x=>x.id===dragId), t = state.players.find(x=>x.id===targetId);
+  if (!d || !t || d.pos !== t.pos || d.id === t.id) return;
+  commit("moved " + d.name);
+  const l = byPos(d.pos).filter(x => x.id !== d.id);
+  l.splice(l.indexOf(t) + (after ? 1 : 0), 0, d);
+  l.forEach((p,i) => p.order = i);
+  render(); save();
+}
+function addPlayer(pos, raw, tierRaw) {
+  let name = (raw || "").trim(); if (!name) return false;
+  let team = "";
+  const m = name.match(/^(.*?)[\s,]+([A-Za-z]{2,3})$/);
+  if (m) { name = m[1].trim(); team = m[2].toUpperCase(); }
+  const tier = Math.max(1, Math.min(9, parseInt(tierRaw,10) || 5));
+  commit("added " + name);
+  const l = byPos(pos);
+  let at = l.length;
+  for (let i=0;i<l.length;i++) if (l[i].tier > tier) { at = i; break; }
+  state.seq = (state.seq||0)+1;
+  const p = { id:"u"+state.seq, name, team, pos, tier, ovr:null, adp:null, bye:null,
+              note:"Added by you.", sleeper:null, starred:false, order:0, status:"available", pickNo:null };
+  l.splice(at,0,p); l.forEach((x,i)=>x.order=i);
+  state.players.push(p); render(); save(); return true;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Paste-to-refresh. Accepts tab, comma or pipe separated lines and
+   tolerates column order, so a copy-paste from most cheat sheets works.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const POSSET = new Set(["QB","RB","WR","TE","K","DST","D/ST","DEF","PK"]);
+const normPos = s => {
+  const u = String(s).toUpperCase().replace(/[^A-Z/]/g,"");
+  if (u === "D/ST" || u === "DEF") return "DST";
+  if (u === "PK") return "K";
+  return POSSET.has(u) ? (u === "D/ST" ? "DST" : u) : null;
+};
+
+function parsePaste(text) {
+  const out = [];
+  String(text).split(/\r?\n/).forEach(line => {
+    const raw = line.trim();
+    if (!raw) return;
+    if (/^(rank|rk|#|player|pos|overall)\b/i.test(raw) && !/\d/.test(raw.replace(/^\D+/,""))) return;
+
+    let cells = raw.split(/\t|\s*\|\s*|\s*,\s*/).map(c => c.trim()).filter(Boolean);
+    if (cells.length < 2) {
+      // "1 Jahmyr Gibbs RB DET 6 1" — whitespace only
+      const mm = raw.match(/^(\d+)[.)\s]+(.+)$/);
+      if (!mm) return;
+      const parts = mm[2].split(/\s+/);
+      const nameBits = [], rest = [];
+      parts.forEach(tok => {
+        if (normPos(tok) || /^\d+$/.test(tok) || (tok.length <= 3 && /^[A-Z]{2,3}$/.test(tok) && nameBits.length))
+          rest.push(tok); else nameBits.push(tok);
+      });
+      cells = [mm[1], nameBits.join(" "), ...rest];
+    }
+
+    let rank=null, name=null, pos=null, team=null, bye=null, adp=null;
+    const nums = [];
+    cells.forEach(c => {
+      const pp = normPos(c);
+      if (pp && !pos) { pos = pp; return; }
+      if (/^\d{1,3}$/.test(c)) { nums.push(+c); return; }
+      if (/^[A-Z]{2,3}$/.test(c) && !team && name) { team = c; return; }
+      if (/[a-z]/.test(c) && /[A-Za-z]{3}/.test(c) && !name) { name = c; return; }
+      if (!name && /[A-Za-z]{3}/.test(c)) { name = c; return; }
+    });
+    if (!name) return;
+    // Strip an embedded "RB1"/"WR12" positional rank from the pos cell.
+    // A name cell often arrives with the position glued on — "Jahmyr Gibbs RB",
+    // "Jahmyr Gibbs RB1", or "RB Jahmyr Gibbs". Strip it and adopt it as the
+    // position, otherwise the name won't match and we'd add a duplicate record.
+    let tail = name.match(/[\s,]+(QB|RB|WR|TE|K|DST|D\/ST|PK)\s*\d*$/i);
+    if (tail) {
+      if (!pos) pos = normPos(tail[1]);
+      name = name.slice(0, tail.index).trim();
+    }
+    let head = name.match(/^(QB|RB|WR|TE|K|DST|D\/ST|PK)\s*\d*[\s,]+(?=\S{3})/i);
+    if (head) {
+      if (!pos) pos = normPos(head[1]);
+      name = name.slice(head[0].length).trim();
+    }
+    if (!pos) { const em = name.match(/\b(QB|RB|WR|TE|K|DST)\d+\b/i); if (em) pos = normPos(em[1]); }
+    if (nums.length) rank = nums[0];
+    if (nums.length >= 2) adp = nums[nums.length - 1];
+    if (nums.length >= 3) bye = nums[nums.length - 2];
+    name = name.replace(/\b(QB|RB|WR|TE|DST)\d+\b/i,"").replace(/\s{2,}/g," ").trim();
+    if (name.length < 2) return;
+    out.push({ rank, name, pos, team, bye, adp });
+  });
+  return out;
+}
+
+const canon = s => String(s).toLowerCase()
+  .replace(/\b(jr|sr|ii|iii|iv|v)\.?$/g,"")
+  .replace(/[^a-z]/g,"");
+
+function applyRankings(text) {
+  const rows = parsePaste(text);
+  if (!rows.length) return toast("nothing parsed — check the format");
+  commit("refreshed rankings");
+  const idx = new Map();
+  state.players.forEach(p => idx.set(canon(p.name), p));
+  let upd = 0, added = 0;
+  rows.forEach(r => {
+    const p = idx.get(canon(r.name));
+    if (p) {
+      if (r.rank != null) p.ovr = r.rank;
+      if (r.adp != null) p.adp = r.adp;
+      if (r.bye != null) p.bye = r.bye;
+      if (r.team) p.team = r.team;
+      upd++;
+    } else if (r.pos) {
+      state.seq = (state.seq||0)+1;
+      const np = { id:"u"+state.seq, name:r.name, team:r.team||"", pos:r.pos,
+        tier:5, ovr:r.rank, adp:r.adp, bye:r.bye, note:"Added by a rankings refresh.",
+        sleeper:null, starred:false, order:9999, status:"available", pickNo:null };
+      state.players.push(np); idx.set(canon(np.name), np); added++;
+    }
+  });
+  // Re-derive each pane's default order from the refreshed overall ranks,
+  // but only for players whose rank actually changed hands.
+  POS.forEach(pp => {
+    const l = state.players.filter(x => x.pos === pp.id)
+      .sort((a,b) => (a.ovr == null ? 9e6 : a.ovr) - (b.ovr == null ? 9e6 : b.ovr));
+    l.forEach((x,i) => x.order = i);
+  });
+  state.updated = new Date().toISOString().slice(0,10);
+  render(); save();
+  toast("updated " + upd + (added ? ", added " + added : "") + " players");
+}
+
+function applyDrafted(text) {
+  const rows = parsePaste(text);
+  const names = rows.length ? rows : String(text).split(/\r?\n/)
+    .map(s=>s.trim()).filter(Boolean).map(s=>({name:s}));
+  if (!names.length) return toast("nothing parsed");
+  commit("applied a drafted list");
+  const idx = new Map();
+  state.players.forEach(p => idx.set(canon(p.name), p));
+  let hit = 0, miss = [];
+  names.forEach(r => {
+    const p = idx.get(canon(r.name));
+    if (p) {
+      if (p.status === "available") { p.status = "gone"; p.pickNo = state.nextPick++; }
+      hit++;
+    } else if (r.name) miss.push(r.name);
+  });
+  armPool(); render(); save();
+  toast("crossed off " + hit + (miss.length ? " · no match: " + miss.slice(0,3).join(", ") : ""));
+}
+
+
+const PALETTES = [
+  ["mocha","Catppuccin Mocha","Soft violet on deep indigo",
+    ["#1E1E2E","#313244","#89B4FA","#A6E3A1","#F38BA8"],"#CBA6F7"],
+  ["midnight","Tokyo Midnight","Cool blue, high clarity",
+    ["#1A1B26","#292E42","#7DCFFF","#9ECE6A","#F7768E"],"#7AA2F7"],
+  ["gruvbox","Gruvbox Material","Warm retro, amber accent",
+    ["#242829","#37413F","#8FBFB4","#B4C77A","#EA7A73"],"#E89B55"],
+  ["rosepine","Rosé Pine Moon","Muted plum and foam",
+    ["#232136","#393552","#9CCFD8","#F6C177","#EB6F92"],"#C4A7E7"]
+];
+
+/* Internal status keys stay "mine"/"gone" so older exports still import.
+   Only the words a person reads changed. */
+const SAY = { mine: "Drafted", gone: "Unavailable" };
+
+/* Bumped whenever the visual build changes, and shown in the brand chip, so
+   a cached copy is identifiable at a glance instead of by squinting at it. */
+const BUILD = "v5 · ide";
+
+/* ══════════════════════════════════════════════════════════════════════
+   Render
+   ══════════════════════════════════════════════════════════════════════ */
+const el = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+/* Columns the viewport tiles. Mirrors the CSS breakpoints exactly; panes
+   past the budget move into the overflow tabs rather than compressing. */
+function paneBudget() {
+  const w = window.innerWidth;
+  if (w <= 940) return 1;
+  if (w <= 1180) return 3;
+  if (w <= 1460) return 4;
+  if (w <= 1740) return 5;
+  return 6;
+}
+
+function render() {
+  document.documentElement.setAttribute("data-theme", state.settings.theme || "mocha");
+  document.documentElement.setAttribute("data-density", state.settings.dense ? "compact" : "cosy");
+  renderBar(); renderStrip(); renderTabs(); renderBoard();
+  el("undo").disabled = hist.length === 0;
+  el("tTaken").dataset.on = ui.hideTaken ? "1" : "0";
+  el("tNotes").dataset.on = ui.notes ? "1" : "0";
+  el("tStar").dataset.on = ui.starOnly ? "1" : "0";
+  el("tVal").dataset.on = ui.byValue ? "1" : "0";
+  el("tDense").dataset.on = state.settings.dense ? "1" : "0";
+}
+
+function renderBar() {
+  el("pick").textContent = pickLabel(state.nextPick);
+  const mine = nextMyPick(), gap = mine == null ? null : mine - state.nextPick;
+  el("upnext").textContent =
+    gap === 0 ? "Your pick" :
+    gap === 1 ? "You're next" :
+    gap != null ? gap + " picks to " + pickLabel(mine) :
+    "Pick " + state.nextPick;
+  el("clock").dataset.up = (gap === 0 || gap === 1) ? "1" : "0";
+  el("fmt").textContent = state.settings.teams + "T · slot " +
+    state.settings.slot + " · " + (state.updated || "Sep 3") + " · " + BUILD;
+}
+
+function renderStrip() {
+  el("strip").innerHTML = POS.map(p => {
+    const av = availIn(p.id), best = av[0];
+    if (!best) return '<div class="bc card" style="--pc:'+p.c+'">'+
+      '<span class="p">'+p.id+'</span>'+
+      '<span class="n" style="color:var(--fg3)">Nobody left</span>'+
+      '<span class="m">&nbsp;</span></div>';
+
+    const inT = state.players.filter(x => x.pos === p.id && x.tier === best.tier);
+    const availT = inT.filter(x => x.status === "available").length;
+    const cliff = availT <= 2 && availT < inT.length && av.length > availT;
+    const v = valOf(best);
+    return '<button class="bc card" data-take="'+best.id+'" style="--pc:'+p.c+'" '+
+      'title="Draft '+esc(best.name)+' to my team">'+
+      '<span class="p">'+p.id+' · best available</span>'+
+      '<span class="n">'+esc(best.name)+'</span>'+
+      '<span class="m">'+
+        (v ? '<span class="v" data-d="'+(v>0?"up":"down")+'">'+(v>0?"+":"")+v+'</span> ' : '')+
+        '<span class="tm">'+esc(best.team || "FA")+'</span>'+
+        (best.ovr != null && best.ovr < 999 ? '<span class="sep"> · </span><span class="no">#'+best.ovr+'</span>' : '')+
+        (best.adp != null ? '<span class="sep"> · </span><span class="ad">adp '+best.adp+'</span>' : '')+
+        '<span class="sep"> · </span>'+av.length+' left'+
+      '</span>'+
+      (cliff ? '<span class="cliff">Last '+availT+' in tier '+best.tier+'</span>' : '')+
+      '</button>';
+  }).join("");
+}
+
+function renderTabs() {
+  const budget = paneBudget();
+  el("ptabs").innerHTML = POS.map((p,i) => {
+    const isTab = i >= budget || budget === 1;
+    return '<button class="pt" data-tab="'+p.id+'" data-on="'+
+      (isTab && activePos === p.id ? 1 : 0)+'" style="--pc:'+p.c+'">'+
+      p.id+'<span class="c">'+availIn(p.id).length+'</span></button>';
+  }).join("");
+}
+
+function renderBoard() {
+  const budget = paneBudget();
+  const cols = POS.map((p,i) => {
+    const all = byPos(p.id);
+    const avail = all.filter(x => x.status === "available").length;
+    const shown = all.filter(x => matches(x, ui.q) &&
+      !(ui.hideTaken && x.status !== "available") &&
+      !(ui.starOnly && !(x.sleeper || x.starred)));
+
+    let body = "";
+    if (!shown.length) {
+      body = '<div class="pnil">'+
+        (ui.q ? "Nobody here matches that." :
+         ui.starOnly ? "No sleepers left at this position." :
+         "Everyone here is off the board.")+'</div>';
+    } else if (ui.byValue) {
+      body = '<div class="band">Value vs ADP<i></i></div>' +
+        shown.map((x,n) => rowHTML(x, n+1)).join("");
+    } else {
+      let lt = null;
+      shown.forEach(x => {
+        if (x.tier !== lt) {
+          lt = x.tier;
+          const n = all.filter(y => y.tier === x.tier && y.status === "available").length;
+          body += '<div class="band">Tier <em>'+x.tier+'</em><i></i>'+
+            '<span class="rem">'+n+' left</span></div>';
+        }
+        body += rowHTML(x, all.indexOf(x) + 1);
+      });
+    }
+
+    const isTab = i >= budget || budget === 1;
+    const hide = isTab && activePos !== p.id;
+
+    return '<section class="col card'+(hide ? " hid" : "")+'" data-pos="'+p.id+'" '+
+      'style="--pc:'+p.c+'"'+(hide ? ' hidden' : '')+'>'+
+      '<div class="chd"><i class="dot"></i><h2>'+p.id+'</h2>'+
+        '<span class="ct">'+avail+' / '+all.length+'</span></div>'+
+      '<div class="list">'+body+'</div>'+
+      '<div class="add">'+
+        '<input type="text" placeholder="Add a player" data-add="'+p.id+'" '+
+          'autocomplete="off" spellcheck="false" aria-label="Add a player to '+p.id+'">'+
+        '<input class="tr" type="number" min="1" max="9" placeholder="tier" '+
+          'data-tier="'+p.id+'" aria-label="Tier">'+
+        '<button data-addbtn="'+p.id+'">Add</button>'+
+      '</div></section>';
+  }).join("");
+
+  el("board").innerHTML = cols + railHTML();
+}
+
+function rowHTML(p, rank) {
+  const taken = p.status !== "available";
+  const g = p.sleeper || (p.starred ? "U" : null);
+  const v = valOf(p);
+
+  const star = '<button class="act star" data-star="'+p.id+'" data-on="'+(g?1:0)+'" '+
+    'title="'+(g ? "Remove from the sleeper pool" : "Add to the sleeper pool")+'" '+
+    'aria-label="'+(g ? "Remove" : "Add")+' '+esc(p.name)+' '+(g ? "from" : "to")+' the sleeper pool">'+
+    (g ? "\u2605" : "\u2606")+'</button>';
+
+  const acts = star + (taken
+    ? '<button class="act rt" data-release="'+p.id+'" title="Put back on the board" '+
+      'aria-label="Put '+esc(p.name)+' back on the board">'+
+      '<span class="lg">Return</span><span class="sm">\u21BA</span></button>'
+    : '<button class="act dr" data-take="'+p.id+'" title="Drafted to my team" '+
+      'aria-label="Draft '+esc(p.name)+' to my team">'+
+      '<span class="lg">Drafted</span><span class="sm">\u2713</span></button>'+
+      '<button class="act un" data-gone="'+p.id+'" title="Unavailable — someone else took him" '+
+      'aria-label="Mark '+esc(p.name)+' unavailable">'+
+      '<span class="lg">Unavailable</span><span class="sm">\u2715</span></button>');
+
+  /* Line two carries the chips and the figures, coloured like an editor:
+     team = type, #rank = literal, adp = literal, bye = comment. Keeping the
+     chips off line one is what gives long names their full width back. */
+  const meta = [];
+  if (v) meta.push('<span class="v" data-d="'+(v>0?"up":"down")+'" '+
+    'title="Ranking against market ADP">'+(v>0?"+":"")+v+'</span>');
+  if (g) meta.push('<span class="gr" title="Sleeper grade: '+
+    ({A:"high confidence",B:"one dependency",C:"cheap flier",U:"starred by you"}[g])+
+    '">'+(g==="U"?"\u2605":g)+'</span>');
+  const figs = ['<span class="tm">'+esc(p.team || "FA")+'</span>'];
+  if (p.ovr != null && p.ovr < 999) figs.push('<span class="no">#'+p.ovr+'</span>');
+  if (p.adp != null) figs.push('<span class="ad">adp '+p.adp+'</span>');
+  if (p.bye != null) figs.push('<span class="by">bye '+p.bye+'</span>');
+  if (taken) figs.push('<span class="st">'+SAY[p.status]+' '+pickLabel(p.pickNo)+'</span>');
+  meta.push(figs.join(""));
+
+  return '<div class="row'+(ui.notes && p.note ? " open" : "")+'" data-id="'+p.id+'" '+
+    'data-s="'+p.status+'" data-pos="'+p.pos+'"'+(taken ? "" : ' draggable="true"')+'>'+
+    (taken
+      ? '<div class="rk">'+rank+'</div>'
+      : '<div class="rk" tabindex="0" role="button" data-grip="'+p.id+'" '+
+        'aria-label="Re-rank '+esc(p.name)+'. Arrow keys to move." '+
+        'title="Drag, or focus and use the arrow keys">'+rank+'</div>')+
+    '<div class="body">'+
+      '<div class="l1"><span class="nm" title="'+esc(p.name)+'">'+esc(p.name)+'</span></div>'+
+      '<div class="l2">'+meta.join("")+'</div>'+
+      (p.note ? '<div class="note">'+esc(p.note)+'</div>' : '')+
+    '</div>'+
+    '<div class="acts">'+acts+'</div>'+
+    '</div>';
+}
+
+function railHTML() {
+  const s = state.settings;
+  const mine = state.players.filter(p => p.status === "mine").sort((a,b) => a.pickNo - b.pickNo);
+  const pool = mine.slice();
+  const take = pos => { const i = pool.findIndex(p => p.pos === pos); return i === -1 ? null : pool.splice(i,1)[0]; };
+  const slots = [];
+  ["QB","RB","WR","TE"].forEach(pos => { for (let i=0;i<(s[pos]||0);i++) slots.push([pos, take(pos)]); });
+  for (let i=0;i<(s.FLEX||0);i++) slots.push(["Flex", take("RB") || take("WR") || take("TE")]);
+  ["K","DST"].forEach(pos => { for (let i=0;i<(s[pos]||0);i++) slots.push([pos, take(pos)]); });
+
+  const starters = slots.map(([l,p]) =>
+    '<div class="slot '+(p ? "full" : "vac")+'"><span class="l">'+l+'</span>'+
+    '<span class="vv">'+(p ? esc(p.name) : "empty")+'</span></div>').join("");
+  const bench = pool.length
+    ? pool.map(p => '<div class="slot full"><span class="l">Bn</span>'+
+        '<span class="vv">'+esc(p.name)+'</span></div>').join("")
+    : '<div class="slot vac"><span class="l">Bn</span><span class="vv">empty</span></div>';
+
+  const openAt = Math.max(1, s.poolRound || 8);
+  const armed = curRound() >= openAt;
+  const sl = sleeperPool();
+  const filled = slots.filter(x => x[1]).length;
+
+  return '<aside class="rail card">'+
+    '<div class="rtabs">'+
+      '<button class="rt" data-rail="team" data-on="'+(railTab==="team"?1:0)+'">'+
+        'My team<span class="c">'+filled+'/'+slots.length+'</span></button>'+
+      '<button class="rt" data-rail="pool" data-on="'+(railTab==="pool"?1:0)+'" '+
+        'data-armed="'+(armed?1:0)+'">Sleepers<span class="c">'+sl.length+'</span></button>'+
+    '</div>'+
+    '<div class="list">'+
+      (railTab === "team"
+        ? starters + '<div class="band">Bench<i></i></div>' + bench
+        : poolHTML(sl, armed, openAt))+
+    '</div>'+
+    '<div class="key">'+
+      '<i style="background:var(--ok)"></i>Drafted by you<br>'+
+      '<i style="background:var(--bad)"></i>Unavailable<br>'+
+      '<i style="background:var(--warn)"></i>Tier cliff / sleeper<br>'+
+      '<i style="background:var(--accent)"></i>Your pick is up'+
+    '</div></aside>';
+}
+
+function poolHTML(list, armed, openAt) {
+  const head = armed
+    ? '<div class="pmsg on">Round '+curRound()+' — this is the range these picks were meant for.</div>'
+    : '<div class="pmsg">Opens round '+openAt+'. Until then take the best player available.</div>';
+  if (!list.length) return head +
+    '<div class="pnil">No sleepers left on the board. Star anyone to add your own.</div>';
+
+  const G = { A:"High confidence", B:"One dependency", C:"Cheap flier", U:"Starred by you" };
+  let out = head, lg = null;
+  list.forEach(({p,g}) => {
+    if (g !== lg) {
+      lg = g;
+      out += '<div class="band"><em>'+(g === "U" ? "\u2605" : g)+'</em> '+G[g]+'<i></i></div>';
+    }
+    const v = valOf(p);
+    out += '<div class="prow'+(ui.notes && p.note ? " open" : "")+'" data-id="'+p.id+'">'+
+      '<div class="pl">'+
+        '<span class="pp" style="color:var(--'+p.pos.toLowerCase()+')">'+p.pos+'</span>'+
+        '<span class="pnm">'+esc(p.name)+
+          (v > 0 ? ' <span class="v" data-d="up">+'+v+'</span>' : '')+'</span>'+
+        '<span class="acts">'+
+          '<button class="act dr" data-take="'+p.id+'" title="Drafted to my team" '+
+            'aria-label="Draft '+esc(p.name)+'"><span class="sm">\u2713</span></button>'+
+          '<button class="act un" data-gone="'+p.id+'" title="Unavailable" '+
+            'aria-label="Mark '+esc(p.name)+' unavailable"><span class="sm">\u2715</span></button>'+
+        '</span>'+
+      '</div>'+
+      (p.note ? '<div class="pn2">'+esc(p.note)+'</div>' : '')+
+      '</div>';
+  });
+  return out;
+}
+
+let toastT = null;
+function toast(m) {
+  const t = el("toast"); t.textContent = m; t.dataset.show = "1";
+  clearTimeout(toastT); toastT = setTimeout(() => t.dataset.show = "0", 2600);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Events
+   ══════════════════════════════════════════════════════════════════════ */
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-take],[data-gone],[data-release],[data-tab],[data-addbtn],[data-star],[data-rail],[data-rice]");
+  if (!t) {
+    const r = e.target.closest(".row,.prow");
+    if (r && !e.target.closest(".acts,.rk,.act")) r.classList.toggle("open");
+    return;
+  }
+  if (t.dataset.take)    { const p = state.players.find(x=>x.id===t.dataset.take);
+                           setStatus(t.dataset.take, "mine");
+                           if (p) toast(SAY.mine + ": " + p.name); return; }
+  if (t.dataset.gone)    { const p = state.players.find(x=>x.id===t.dataset.gone);
+                           setStatus(t.dataset.gone, "gone");
+                           if (p) toast(SAY.gone + ": " + p.name); return; }
+  if (t.dataset.release) return release(t.dataset.release);
+  if (t.dataset.star)    return toggleStar(t.dataset.star);
+  if (t.dataset.tab)     { activePos = t.dataset.tab; render(); return; }
+  if (t.dataset.rail)    { railTab = t.dataset.rail; render(); return; }
+  if (t.dataset.rice)    {
+    commit("changed palette"); state.settings.theme = t.dataset.rice;
+    render(); renderRices(); save(); return;
+  }
+  if (t.dataset.addbtn) {
+    const pos = t.dataset.addbtn;
+    const ni = document.querySelector('[data-add="'+pos+'"]');
+    const ti = document.querySelector('[data-tier="'+pos+'"]');
+    if (addPlayer(pos, ni.value, ti.value)) {
+      toast("Added to " + pos);
+      const again = document.querySelector('[data-add="'+pos+'"]');
+      if (again) again.focus();
+    } else ni.focus();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const add = e.target.closest("[data-add]");
+    if (add) {
+      const pos = add.dataset.add;
+      const ti = document.querySelector('[data-tier="'+pos+'"]');
+      if (addPlayer(pos, add.value, ti ? ti.value : 5)) {
+        toast("Added to " + pos);
+        const again = document.querySelector('[data-add="'+pos+'"]');
+        if (again) again.focus();
+      }
+      e.preventDefault(); return;
+    }
+    if (e.target.id === "find") {
+      const q = ui.q.trim(); if (!q) return;
+      const s = q.toLowerCase(), cand = [];
+      POS.forEach(p => availIn(p.id).forEach(x => { if (matches(x,s)) cand.push(x); }));
+      cand.sort((a,b) => {
+        const sa = a.name.toLowerCase().startsWith(s) ? 0 : 1;
+        const sb = b.name.toLowerCase().startsWith(s) ? 0 : 1;
+        return sa - sb || (a.ovr==null?9e6:a.ovr) - (b.ovr==null?9e6:b.ovr);
+      });
+      const hit = cand[0];
+      if (!hit) return toast("Nobody available matches “" + q + "”");
+      const st = e.shiftKey ? "mine" : "gone";
+      setStatus(hit.id, st);
+      toast(SAY[st] + ": " + hit.name);
+      el("find").value = ""; ui.q = ""; render(); el("find").focus();
+      e.preventDefault();
+    }
+    return;
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); return; }
+  if (e.key === "Escape") {
+    if (el("scrim").dataset.open === "1") { el("scrim").dataset.open = "0"; return; }
+    if (document.activeElement === el("find")) { el("find").value = ""; ui.q = ""; render(); el("find").blur(); }
+    return;
+  }
+  if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+    e.preventDefault(); el("find").focus(); return;
+  }
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    const grip = document.activeElement;
+    if (!grip || !grip.dataset || !grip.dataset.grip) return;
+    const row = grip.closest(".row"); if (!row) return;
+    e.preventDefault();
+    const id = row.dataset.id;
+    nudge(id, e.key === "ArrowUp" ? -1 : 1);
+    const again = document.querySelector('.row[data-id="'+id+'"] .rk[data-grip]');
+    if (again) again.focus();
+  }
+});
+
+el("find").addEventListener("input", e => { ui.q = e.target.value; renderBoard(); });
+el("undo").addEventListener("click", undo);
+el("tTaken").addEventListener("click", () => { ui.hideTaken = !ui.hideTaken; render(); });
+el("tNotes").addEventListener("click", () => { ui.notes = !ui.notes; render(); });
+el("tStar").addEventListener("click", () => { ui.starOnly = !ui.starOnly; render(); });
+el("tDense").addEventListener("click", () => {
+  commit("changed density");
+  state.settings.dense = !state.settings.dense;
+  render(); save();
+});
+el("tVal").addEventListener("click", () => {
+  ui.byValue = !ui.byValue; render();
+  toast(ui.byValue ? "Sorted by value against ADP. Re-ranking is off." : "Back to your ranking.");
+});
+
+let resizeT = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeT); resizeT = setTimeout(() => { renderTabs(); renderBoard(); }, 110);
+});
+
+/* ── Drag to re-rank ───────────────────────────────────────────────── */
+let dragId = null;
+document.addEventListener("dragstart", e => {
+  const row = e.target.closest('.row[draggable=true]'); if (!row) return;
+  dragId = row.dataset.id; row.classList.add("drag");
+  e.dataTransfer.effectAllowed = "move";
+  try { e.dataTransfer.setData("text/plain", dragId); } catch (_) {}
+});
+document.addEventListener("dragover", e => {
+  const row = e.target.closest(".row"); if (!row || !dragId) return;
+  const src = state.players.find(p => p.id === dragId);
+  if (!src || row.dataset.pos !== src.pos) return;
+  e.preventDefault();
+  document.querySelectorAll(".before,.after").forEach(n => n.classList.remove("before","after"));
+  const b = row.getBoundingClientRect();
+  row.classList.add(e.clientY < b.top + b.height/2 ? "before" : "after");
+});
+document.addEventListener("drop", e => {
+  const row = e.target.closest(".row"); if (!row || !dragId) return;
+  e.preventDefault();
+  const after = row.classList.contains("after");
+  document.querySelectorAll(".before,.after").forEach(n => n.classList.remove("before","after"));
+  moveTo(dragId, row.dataset.id, after); dragId = null;
+});
+document.addEventListener("dragend", () => {
+  document.querySelectorAll(".drag,.before,.after").forEach(n => n.classList.remove("drag","before","after"));
+  dragId = null;
+});
+
+/* ── Setup ─────────────────────────────────────────────────────────── */
+const SIDS = ["teams","slot","QB","RB","WR","TE","FLEX","K","DST","BN","poolRound"];
+
+function renderRices() {
+  el("rices").innerHTML = PALETTES.map(([id,name,desc,sw,ac]) =>
+    '<button class="rice" data-rice="'+id+'" data-on="'+(state.settings.theme===id?1:0)+'">'+
+      '<span class="rn">'+name+'</span><span class="rd">'+desc+'</span>'+
+      '<span class="sw">'+sw.map(c=>'<i style="background:'+c+'"></i>').join("")+
+        '<i style="background:'+ac+'"></i></span>'+
+    '</button>').join("");
+}
+
+el("cfg").addEventListener("click", () => {
+  SIDS.forEach(k => el("s_"+k).value = state.settings[k]);
+  renderRices();
+  el("vintage").textContent = VINTAGE + (state.updated ? " Last refreshed here: " + state.updated + "." : "");
+  el("scrim").dataset.open = "1";
+});
+el("cfgX").addEventListener("click", () => el("scrim").dataset.open = "0");
+el("scrim").addEventListener("click", e => { if (e.target === el("scrim")) el("scrim").dataset.open = "0"; });
+
+SIDS.forEach(k => el("s_"+k).addEventListener("change", e => {
+  const v = parseInt(e.target.value, 10);
+  if (Number.isNaN(v)) { e.target.value = state.settings[k]; return; }
+  commit("changed setup");
+  state.settings[k] = Math.max(0, v);
+  if (k === "teams") state.settings.teams = Math.max(2, state.settings.teams);
+  if (state.settings.slot > state.settings.teams) state.settings.slot = state.settings.teams;
+  el("s_slot").value = state.settings.slot;
+  render(); save();
+}));
+
+el("applyPaste").addEventListener("click", () => {
+  const v = el("paste").value.trim();
+  if (!v) return toast("Paste a rankings table first.");
+  applyRankings(v);
+});
+el("markGone").addEventListener("click", () => {
+  const v = el("paste").value.trim();
+  if (!v) return toast("Paste a list of taken players first.");
+  applyDrafted(v);
+});
+
+el("exp").addEventListener("click", () => {
+  const b = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(b);
+  a.download = "draft-board-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click(); URL.revokeObjectURL(a.href); toast("Exported.");
+});
+el("imp").addEventListener("click", () => el("impf").click());
+el("impf").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const n = JSON.parse(r.result);
+      if (!n || !Array.isArray(n.players)) throw new Error("shape");
+      commit("imported a board"); state = n;
+      if (!state.settings) state.settings = {...DEFAULTS};
+      if (!state.nextPick) state.nextPick = 1;
+      migrate(); render(); save();
+      el("scrim").dataset.open = "0";
+      toast("Imported " + state.players.length + " players.");
+    } catch (err) { toast("That file isn't a board export."); }
+  };
+  r.readAsText(f); e.target.value = "";
+});
+el("clearP").addEventListener("click", () => {
+  commit("cleared all picks");
+  state.players.forEach(p => { p.status = "available"; p.pickNo = null; });
+  state.nextPick = 1; state.poolShown = false; railTab = "team";
+  render(); save(); toast("Picks cleared. Your rankings are intact.");
+});
+el("reset").addEventListener("click", () => {
+  commit("reset the board");
+  const keep = {...state.settings};
+  state = buildSeed(); state.settings = keep;
+  render(); save(); el("scrim").dataset.open = "0";
+  toast("Board reset to the September 3 rankings.");
+});
+
+/* ── Boot ──────────────────────────────────────────────────────────── */
+function migrate() {
+  const s = state.settings;
+  Object.keys(DEFAULTS).forEach(k => { if (s[k] == null) s[k] = DEFAULTS[k]; });
+  if (!PALETTES.some(p => p[0] === s.theme)) s.theme = DEFAULTS.theme;
+  if (!state.seq) state.seq = state.players.length;
+  const seedByName = new Map();
+  POS.forEach(p => (SEED[p.id]||[]).forEach(r => seedByName.set(canon(r[0]), r)));
+  state.players.forEach(p => {
+    if (!("sleeper" in p)) p.sleeper = SLEEPERS[p.name] || null;
+    if (!("starred" in p)) p.starred = false;
+    if (p.ovr === undefined || p.adp === undefined) {
+      const r = seedByName.get(canon(p.name));
+      if (r) { p.ovr = r[3]; p.adp = r[4]; p.bye = r[5]; }
+      else {
+        if (p.ovr === undefined) p.ovr = null;
+        if (p.adp === undefined) p.adp = null;
+        if (p.bye === undefined) p.bye = null;
+      }
+    }
+  });
+}
+
+(async function boot() {
+  const saved = await load();
+  state = saved && Array.isArray(saved.players) ? saved : buildSeed();
+  if (!state.settings) state.settings = {...DEFAULTS};
+  if (!state.nextPick) state.nextPick = 1;
+  migrate();
+  render();
+  if (memOnly) setTimeout(() => toast("Autosave is off here — use Setup, then Export."), 800);
+})();
+
+</script>

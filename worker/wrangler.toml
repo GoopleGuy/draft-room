@@ -1,0 +1,16 @@
+name = "espn-draft-adapter"
+main = "src/index.js"
+compatibility_date = "2026-09-03"
+
+# Public config only. NEVER put ESPN_SWID or ESPN_S2 here — this file is
+# committed. They go in via: npx wrangler secret put ESPN_SWID
+[vars]
+ESPN_LEAGUE_ID = "REPLACE_WITH_YOUR_LEAGUE_ID"
+ESPN_SEASON = "2026"
+# Lock the browser origin to your Pages site. "*" is fine while testing.
+# An ORIGIN is scheme+host only — https://you.github.io
+# NOT https://you.github.io/repo-name  (paths are not part of an origin).
+ALLOWED_ORIGIN = "https://YOURNAME.github.io"
+
+# Free plan: 100,000 requests/day, 10ms CPU. A 3-hour draft polled every
+# 3 seconds is ~3,600 requests, so this runs at no cost.

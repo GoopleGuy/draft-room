@@ -1,0 +1,11 @@
+# Never commit ESPN cookies, in any form.
+*.local
+*.pyc
+.env
+.env.*
+.wrangler/
+__pycache__/
+drafted.txt
+espn-cookies*
+node_modules/
+secrets*
