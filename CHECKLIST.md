@@ -234,7 +234,7 @@ Both leagues are on the one account, so you do this ONCE.
 
 ```
 ☐ F.1  ACTION   $ node --version
-       VERIFY   prints  v18  or higher (v20, v22, v24 all fine)
+       VERIFY   prints  v24.22.1+ within 24.x (also 22.23.4+ within 22.x or 26.12.1+ within 26.x)
        IF NOT   nodejs.org → download the LTS installer → run it →
                 QUIT Terminal, reopen it → repeat F.1
 
@@ -255,7 +255,7 @@ Both leagues are on the one account, so you do this ONCE.
        NOTE     ESPN_LEAGUE_ID is only the DEFAULT. Longmont will pass its own
                 id in the URL. Do not put cookies in this file.
 
-☐ F.4  ACTION   $ npm install
+☐ F.4  ACTION   $ npm ci
        VERIFY   ends without "ERR!" lines; a  node_modules  folder appears
        IF NOT   read the last red line; usually no internet or Node too old
 

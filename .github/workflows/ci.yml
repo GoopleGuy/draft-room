@@ -1,0 +1,26 @@
+name: Validate patched Node toolchain
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  worker-tooling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+      - run: node --check src/index.js
+      - run: npx --no-install wrangler deploy --dry-run --outdir /tmp/draft-worker-check
+        env:
+          WRANGLER_SEND_METRICS: 'false'

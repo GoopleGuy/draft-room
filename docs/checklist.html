@@ -295,7 +295,7 @@ const PARTS = [
   steps:[
   { id:"F.1", t:"Check Node",
     act:[`cmd:node --version`],
-    ver:["<span class=ui>v18</span> or higher"],
+    ver:["<span class=ui>v24.22.1+</span> within 24.x (also 22.23.4+ within 22.x or 26.12.1+ within 26.x)"],
     ifnot:["nodejs.org → LTS installer → run → <b>quit and reopen Terminal</b> → repeat"] },
   { id:"F.2", t:"Go to the worker folder",
     act:[`cmd:cd ~/Downloads/draft-room/worker\nls src`],
@@ -309,7 +309,7 @@ const PARTS = [
     ver:["ALLOWED_ORIGIN is scheme+host <b>only</b>. No /draft-room. No trailing slash."],
     note:["ESPN_LEAGUE_ID is only the <em>default</em>. Longmont passes its own id in the URL. <b>No cookies in this file.</b>"] },
   { id:"F.4", t:"Install Wrangler",
-    act:[`cmd:npm install`],
+    act:[`cmd:npm ci`],
     ver:["Ends without <span class=ui>ERR!</span> lines; a <span class=path>node_modules</span> folder appears"] },
   { id:"F.5", t:"Log in to Cloudflare",
     act:[`cmd:npx wrangler login`],

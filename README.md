@@ -45,6 +45,12 @@ on `username.github.io` cannot call it from the browser regardless of how the
 league is configured. Something server-side must make the request. That is the
 Worker's entire job — it makes no fantasy decisions.
 
+## Node.js tooling
+
+Use Node.js 24.22.1 (pinned in `.nvmrc`; run `nvm install && nvm use` from the repository root). Patched Node.js 22.23.4+ within 22.x and 26.12.1+ within 26.x are also accepted. The worker package rejects older releases during npm installation. These minimums include the [October 21, 2026 security fixes](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases).
+
+Run `cd worker && npm ci` to install the committed Wrangler toolchain. Node.js is used only for local Wrangler tooling. Production requests run in Cloudflare Workers, not a user-managed Node.js server; these pins do not upgrade Cloudflare's runtime. The static board and Python diagnostic client do not use Node.js.
+
 ## Setup
 
 ### 1. Verify ESPN access before draft day
