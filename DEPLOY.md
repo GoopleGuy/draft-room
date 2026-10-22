@@ -213,9 +213,9 @@ Check first — you may already have it:
 $ node --version
 ```
 
-If that prints `v18` or higher, skip ahead. Otherwise download the **LTS**
-installer from **nodejs.org**, run it, then **open a new Terminal window** and
-check again.
+Use `v24.22.1` (the version pinned in `.nvmrc`), or a newer patched 24.x release. Patched 22.x releases starting at `v22.23.4` and 26.x releases starting at `v26.12.1` are also accepted. Node 18 and 20 are end-of-life.
+
+With nvm, run `nvm install && nvm use` from the repository root. Otherwise download a supported patched release from **nodejs.org**, run the installer, then **open a new Terminal window** and check again.
 
 ### 5b. Configure
 
@@ -244,13 +244,13 @@ Save (`⌘S`) and close.
 ### 5c. Deploy
 
 ```
-$ npm install
+$ npm ci
 $ npx wrangler login
 ```
 
-`npm install` pulls Wrangler locally from `package.json` so `npx` uses a known
-version rather than fetching whatever is newest. It writes a
-`package-lock.json` — commit that too.
+`npm ci` installs the exact dependency versions from the committed
+`package-lock.json`, so `npx` uses the local Wrangler rather than fetching
+whatever is newest. It does not rewrite the lockfile.
 
 A browser opens — authorise it. (Free Cloudflare account required; sign up at
 cloudflare.com if you don't have one.)
