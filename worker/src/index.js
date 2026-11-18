@@ -55,6 +55,9 @@ function json(body, status, env, extra = {}) {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": `public, max-age=${CACHE_SECONDS}`,
       ...cors(env, extra),
+      // Credential-backed results must not be retained in shared/browser caches.
+      ...((env.ESPN_SWID || env.ESPN_S2)
+        ? { "Cache-Control": "private, no-store" } : {}),
     },
   });
 }
@@ -163,7 +166,10 @@ async function playersRoute(env, headers) {
   const filter = JSON.stringify({
     players: { limit: 1500, sortPercOwned: { sortPriority: 1, sortAsc: false } },
   });
-  const res = await fetch(url, { headers: { ...headers, "X-Fantasy-Filter": filter } });
+  const res = await fetch(url, {
+    headers: { ...headers, "X-Fantasy-Filter": filter },
+    ...((env.ESPN_SWID || env.ESPN_S2) ? { cache: "no-store" } : {}),
+  });
   if (res.status === 401 || res.status === 403)
     return { err: ["auth", "Player lookup rejected the adapter's credentials."] };
   if (res.status === 404) return { err: ["config", "Player lookup returned 404 — check ESPN_SEASON."] };
@@ -248,7 +254,9 @@ export default {
     try {
       res = await fetch(upstream, {
         headers,
-        cf: { cacheTtl: CACHE_SECONDS, cacheEverything: false },
+        ...((env.ESPN_SWID || env.ESPN_S2)
+          ? { cache: "no-store" }
+          : { cf: { cacheTtl: CACHE_SECONDS, cacheEverything: false } }),
       });
     } catch (e) {
       return fail("network", "Could not reach ESPN.", 502, env);
