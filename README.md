@@ -152,7 +152,11 @@ unconditional curve ignored that evidence — it understated one real case by 5x
 - `wrangler.toml` is committed; secrets go in with `wrangler secret put`.
 - Set `ALLOWED_ORIGIN` to your Pages origin. CORS is a browser control, not
   authentication — for a personal board, a public-but-obscure endpoint
-  returning only pick IDs is a reasonable risk, but know that's the tradeoff.
+  returning draft picks, team names and league settings is an explicit privacy
+  tradeoff. With account cookies configured, caller-selected league IDs can
+  expose other leagues that account can access. Private responses are marked
+  `private, no-store`, but this does not restrict who can request them. Use an
+  authenticated access gateway if that data must not be public.
 - If you ever add an LLM layer, route it through the Worker too. Never put an
   API key in the static site.
 
